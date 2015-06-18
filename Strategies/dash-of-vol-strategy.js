@@ -8,5 +8,3 @@ weight.INDEX_GSPC = 1;
 
 //13 week t-bill yield index used to calculate Sharpe ratio. Scaled for a monthly horizon
 weight.INDEX_IRX = -(weight.INDEX_GSPC+weight.INDEX_VIX)*(4/13);
-
-////
