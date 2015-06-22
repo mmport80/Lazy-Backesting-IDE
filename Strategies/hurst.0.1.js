@@ -1,8 +1,15 @@
-var lb = 100;
+var lb = 200;
+
 var v = data.INDEX_GSPC.daily().lookback(lb+1).returns();
 
-//find max poss range per lookback size
-var xx = Lazy.range(2,12);//([2,4,8]);//
+var xx = Lazy
+	.range(1,Math.floor(Math.log2(lb/3))+1)
+	.map(
+      function(i){
+    	return Math.pow(2,i);
+      	}
+    );
+
 var yy = xx
   	.map(
 		function(n){
@@ -56,7 +63,6 @@ var h =
     ln_xx,true
   	);
 
-
 var signal = (Math.abs(h)-0.5)/0.5;
 
 //var r2 = Math.pow(jStat.corrcoeff(yy,ln_xx),2);
@@ -66,4 +72,3 @@ var flag = 0;
 v[0] < 0 ? flag = -1 : flag = 1;
 
 weight.INDEX_GSPC = signal * flag;
-
