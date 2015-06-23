@@ -1,4 +1,4 @@
-var lb = 200;
+var lb = 300;
 
 var v = data.INDEX_GSPC.daily().lookback(lb+1).returns();
 
@@ -8,7 +8,8 @@ var xx = Lazy
       function(i){
     	return Math.pow(2,i);
       	}
-    );
+    )
+    ;
 
 var yy = xx
   	.map(

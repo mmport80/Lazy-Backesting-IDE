@@ -1,4 +1,4 @@
-var lb = 100;
+var lb = 300;
 
 var v = data.INDEX_GSPC.daily().lookback(lb+1).returns();
 
