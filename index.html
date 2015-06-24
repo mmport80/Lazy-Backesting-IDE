@@ -133,10 +133,6 @@
                 
                 <p><a href='javascript:void(0)' id="BackTest">Back Test</a></p>
                 
-                <p>
-                        Bump
-                        <input type="number" id='bump' autocomplete="on"/>
-                </p>
                 
                 <div id="messages"></div>
                 
@@ -250,8 +246,6 @@
                                 value: function(isYield){ 
                                         var _this = this;
                         
-                                        //var bump = +document.getElementById('bump').value;
-                        
                                         return Lazy(this.prices)
                                                 .map(
                                                         function(i){
@@ -263,7 +257,6 @@
                                                                         }
                                                                 }
                                                         )
-                                                //.last(this.prices.length-bump)
                                                 .union(globalInputs);
                                         },
                                 writable: true,
@@ -310,18 +303,15 @@
                         {
                                 value: function(){
                                         var _this = this;
-                                        var bump = +document.getElementById('bump').value;
                                         return Lazy.generate(
                                                 function() {
                                                         //init
                                                         var ccdl2 = _this.toObject();
                                                         
-                                                        //ccdl.print()
-                                                        
                                                         var ccdl = assetKeys
                                                                 .reduce(
                                                                         function(acc,k){
-                                                                                acc[k] = Lazy(ccdl2[k]).last(ccdl2[k].length-bump).toArray();
+                                                                                acc[k] = Lazy(ccdl2[k]).last(ccdl2[k].length).toArray();
                                                                                 return acc;
                                                                                 }
                                                                         ,{}
