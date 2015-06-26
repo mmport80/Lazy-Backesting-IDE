@@ -155,6 +155,10 @@ Clean data
                 
                 <p><a href='javascript:void(0)' id="BackTest">Back Test</a></p>
                 
+<<<<<<< HEAD
+=======
+                
+>>>>>>> 35453122336c507cc97c64f6b7f6b94d3e5635ae
                 <div id="messages"></div>
                 
                 
@@ -267,8 +271,6 @@ Clean data
                                 value: function(isYield){ 
                                         var _this = this;
                         
-                                        //var bump = +document.getElementById('bump').value;
-                        
                                         return Lazy(this.prices)
                                                 .map(
                                                         function(i){
@@ -280,7 +282,6 @@ Clean data
                                                                         }
                                                                 }
                                                         )
-                                                //.last(this.prices.length-bump)
                                                 .union(globalInputs);
                                         },
                                 writable: true,
@@ -331,8 +332,6 @@ Clean data
                                                 function() {
                                                         //init
                                                         var ccdl2 = _this.toObject();
-                                                        
-                                                        //ccdl.print()
                                                         
                                                         var ccdl = assetKeys
                                                                 .reduce(
