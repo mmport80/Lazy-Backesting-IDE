@@ -325,11 +325,9 @@
                                                                                 function(acc,k){
                                                                                         //horizon +1 of prices in order to get horizon's worth of returns
                                                                                         //generate return
-                                                                
                                                                                         acc.date = ccdl[k][0].date;
-                                                                                        acc.future[k] = [ ccdl[k][0], ccdl[k][horizon] ].returns();;
+                                                                                        acc.future[k] = [ ccdl[k][0], ccdl[k][horizon] ].returns();
                                                                                         acc.history[k] = ccdl[k].slice(horizon, ccdl[k].length );
-                                                                
                                                                                         return acc;
                                                                                         }
                                                                                 ,{date:"", future:{}, history:{}}
