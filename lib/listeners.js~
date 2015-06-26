@@ -26,7 +26,6 @@
 function addAsset(source, ticker, yield){
         var key = document.getElementById('key').value;
         
-        //key = 'Fp6cFhibc5xvL2pN3dnu';
         
         Lazy(ticker)
                 .split(',')
@@ -61,7 +60,6 @@ setAddAssetListener(2);
 setAddAssetListener(3);
 
 
-//*****************************************************
 //*****************************************************
 
 function setBackTestListener(){
@@ -110,6 +108,22 @@ document
 //*****************************************************
 
 
-//*****************************************************
+function setBumpListener(){
+        //horizon = +document.getElementById('horizon').value;
+        if (cd.length != 0){
+                fd = cd.formatData().toArray();
+                }
+        }
+
+
+//after pushing 'calc' button
+//changehorizon, means changing clean data also - if not []
+document
+        .getElementById('bump')
+        .addEventListener("change", 
+                function(){ 
+                        setBumpListener();
+                        }
+                );
 
 //*****************************************************
