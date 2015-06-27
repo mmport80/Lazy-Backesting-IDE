@@ -19,7 +19,6 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with Lazy Backtesting.  If not, see <http://www.gnu.org/licenses/>.
-        //
 -->
 <head>
         
@@ -30,18 +29,17 @@
         
         <script type="text/javascript" src="lib/lazy.js"></script>
         <script type="text/javascript" src="lib/jstat.min.js"></script>
-        <script type="text/javascript" src="lib/networking2.js"></script>
-        <script type="text/javascript" src="lib/utility.js"></script>
-        <script type="text/javascript" src="lib/strategyHelpers.js"></script>
         <script type="text/javascript" src="lib/d3.min.js"></script>
-       
-        
         <script type="text/javascript" charset="utf-8" src="lib/numeric-1.2.6.min.js"></script>
        
         <script src="lib/codemirror.js"></script>
         <link rel="stylesheet" href="lib/codemirror.css">
         <script src="lib/javascript.js"></script>
         
+        <script type="text/javascript" src="lib/networking2.js"></script>
+        <script type="text/javascript" src="lib/utility.js"></script>
+        <script type="text/javascript" src="lib/strategyHelpers.js"></script>
+       
         <style>
                 #title{font-size:6em}
                 #downloadResults{display:none;}
@@ -85,7 +83,7 @@
                         <input type="text" id='ticker2' value='SKEW'/>
                         Yield
                         <input type="checkbox" id="yield2" value="true" autocomplete="on"/>
-                        <a href='javascript:void(0)' id='addAsset2'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset2'>ADD</a>
                 </div>
 
                 <div>
@@ -99,7 +97,7 @@
                         <input type="text" id='ticker1' value='INDEX_GSPC' value="true" autocomplete="on"/>
                         Yield
                         <input type="checkbox" id="yield1" autocomplete="on"/>
-                        <a href='javascript:void(0)' id='addAsset1'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset1'>ADD</a>
                 </div>
                 
                 <div>
@@ -112,7 +110,7 @@
                         <input type="text" id='ticker3' value='INDEX_IRX' value="true" autocomplete="on"/>
                         Yield
                         <input type="checkbox" id="yield3" autocomplete="on" checked />
-                        <a href='javascript:void(0)' id='addAsset3'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset3'>ADD</a>
                 </div>
                 
                 <hr />  
@@ -131,7 +129,7 @@
                 
                 <p>4) Hit the back test link</p>
                 
-                <p><a href='javascript:void(0)' id="BackTest">Back Test</a></p>
+                <p><a href='javascript:void(0)' id="backTest">Back Test</a></p>
                 
                 
                 <div id="messages"></div>
@@ -160,12 +158,118 @@
 
         <script>
                 "use strict"
+        
+                //*****************************************************
+                //globals        
+                
+                var data = [];
+                var fd = null;
+                var cd = null;
+                
+                //*****************************************************
+                //set listeners
+                
+                document.getElementById('addAsset1')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(1);}
+                                );
+                document.getElementById('addAsset2')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(2);}
+                                );
+                document.getElementById('addAsset3')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(3);}
+                                );
+                document.getElementById('backTest')
+                        .addEventListener(
+                                "click", 
+                                function(){setBackTestListener();}
+                                );
+                
+                //*****************************************************
+                function setBackTestListener(){
+                        var code = editor.getValue();
+                        var js = 
+                                "var strategyLogic = function(data){var weight = new Object();\n"+
+                                code+"\n"+
+                                "return weight;}\n"+
+                                "backTest();\n";
+                        var s = document.createElement('script');
+                        s.textContent = js;
+                        document.body.appendChild(s);
+                        }
+                
+                //*****************************************************
+                
+                //send off to worker, process in the background...
+                //everything else gets sent to same worker
+                //so requests gets queued up on one worker
+                //gui stays fluent, works is backgrounded
+                document.getElementById('horizon')
+                        .addEventListener(
+                                "change", 
+                                //format data if clean data is available
+                                function(){cd != null ? fd = cd.formatData() : null;}
+                                );
+                
+        
+                //*****************************************************
+                //for some reason I can't put this in a seperate 'utility.js' file...
+                   
+                Object.defineProperty(
+                        Object.prototype, 
+                        'print',
+                        {
+                                value: function(){ return console.log(this); },
+                                writable: true,
+                                configurable: true,
+                                enumerable: false
+                                }
+                        );
+                
+        
+                //*****************************************************
+                //Code Mirror
+                
+                var editor = CodeMirror(
+                        document.getElementById("code"), 
+                        {
+                          value:
+                                "//The 'data' object stores all the inputs needed to allocate assets.\n"+
+                                "//data.SKEW is the CBOE skew index time series.\n"+
+                                "\n"+
 
+                                "//data.INDEX_GSPC is the S&P 500 price time series.\n\n"+
+
+                                "//This strategy uses the latest skew change as an indicator,\n"+
+                                "//which sets asset weights for the next period.\n"+
+                                "//In this case, the S&P 500 is weighted long or short.\n\n"+
+                        
+                                "//The indicator sets asset weights for the next period.\n"+
+                                "//We get the previous two monthly levels and generate a return.\n"+
+                                
+                                "var skewReturn = data.SKEW.monthly().lookback(2).returns()[0];\n"+
+                                
+	                        "weight.INDEX_GSPC = -skewReturn;\n\n"+
+                                
+                                "//13 week t-bill yield index used to calculate Sharpe ratio. Scaled for a monthly horizon\n"+
+                                "weight.INDEX_IRX = -weight.INDEX_GSPC*(4/13);\n"
+                                ,
+                          mode: "javascript",
+                          lineNumbers: true
+                        }
+                        );
                 
                 //*****************************************************
                 //get data
          
                 function getData(source,ticker,y){
+                        
+                        
                         return getQuandlData(source,ticker)
                                 .take(1)
                                 .value()[0]
@@ -183,63 +287,39 @@
 
                 //*****************************************************
                 //add assets
-                        
+                    
                 
-                function addAsset(no,dataSoFar){
+                function addAsset(no){
                         var ticker = document.getElementById('ticker'+no).value;
                         
-                        var newData = getData(
+                        ticker.write("Requesting prices for:","availableData");
+                        
+                        //var newData = 
+                        var i = getData(
                                 document.getElementById('source'+no).value,
                                 ticker,
                                 document.getElementById('yield'+no).checked
                                 );
+                                
+                        "OK".write("Status:","availableData");
                         
                         //add data to 'addAsset listener'
                         //set listeners function
                         //feed need data into each
                         //append to existing data
                         
-                        var data = dataSoFar.concat({ticker: ticker, prices: newData});
-                        setListeners(data);
+                        //i.print();
                         
+                        //raw data
+                        data = data.concat({ticker: ticker, prices: i});
                         //clean
-                        console.log( data.cleanData().formatData().toArray() );
-                        
+                        cd = data.cleanData();
                         //format
+                        fd = cd.formatData();
+                        
+                                        
                         
                         
-                        //update 'backtest' link
-                        
-                        }
-        
-                
-                
-                
-                //initialise
-                setListeners([],[]);
-        
-                function removeListener(id){
-                        var old_element = document.getElementById(id);
-                        var new_element = old_element.cloneNode(true);
-                        old_element.parentNode.replaceChild(new_element, old_element);
-                        }
-                        
-                function addListener(id,data){
-                        document.getElementById('addAsset'+id)
-                                .addEventListener(
-                                        "click", 
-                                        function(){addAsset(id,data);}
-                                        );
-                        }
-                        
-                function setListeners(data){
-                        removeListener('addAsset1');
-                        removeListener('addAsset2');
-                        removeListener('addAsset3');
-                        
-                        addListener(1,data);
-                        addListener(2,data);
-                        addListener(3,data);
                         }
                 
                 
@@ -270,7 +350,6 @@
                                                 }
                                         , {}
                                         );
-                        
                         }
                 
                 Object.defineProperty(
@@ -286,33 +365,33 @@
                 
                 //*****************************************************
                 function clone(obj) {
-                    var copy;
-                    // Handle the 3 simple types, and null or undefined
-                    if (null == obj || "object" != typeof obj) return obj;
-                    // Handle Date
-                    if (obj instanceof Date) {
-                        copy = new Date();
-                        copy.setTime(obj.getTime());
-                        return copy;
-                    }
-                    // Handle Array
-                    if (obj instanceof Array) {
-                        copy = [];
-                        for (var i = 0, len = obj.length; i < len; i++) {
-                            copy[i] = clone(obj[i]);
+                        var copy;
+                        // Handle the 3 simple types, and null or undefined
+                        if (null == obj || "object" != typeof obj) return obj;
+                        // Handle Date
+                        if (obj instanceof Date) {
+                                copy = new Date();
+                                copy.setTime(obj.getTime());
+                                return copy;
+                                }
+                        // Handle Array
+                        if (obj instanceof Array) {
+                                copy = [];
+                                for (var i = 0, len = obj.length; i < len; i++) {
+                                        copy[i] = clone(obj[i]);
+                                        }
+                                return copy;
+                                }
+                        // Handle Object
+                        if (obj instanceof Object) {
+                                copy = {};
+                                for (var attr in obj) {
+                                        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+                                }
+                                return copy;
+                                }
+                                throw new Error("Unable to copy obj! Its type isn't supported.");
                         }
-                        return copy;
-                    }
-                    // Handle Object
-                    if (obj instanceof Object) {
-                        copy = {};
-                        for (var attr in obj) {
-                            if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-                        }
-                        return copy;
-                    }
-                    throw new Error("Unable to copy obj! Its type isn't supported.");
-                }
                 
                 //*****************************************************
                 
@@ -365,8 +444,226 @@
                                 }
                         );     
         
-        
+                
                 //*****************************************************
+                
+                function backTest(){
+                        fd      .reduce(
+                                        function(a,c){
+                                                //throws an error if strategy logic asks for more data than available
+                                                try {
+                                                        var currentWeights = strategyLogic(c.history); 
+                                        
+                                                        var rr = {};
+                                        
+                                                        rr.date = c.date;
+                                        
+                                                        rr = Object
+                                                                .keys(c.future)
+                                                                .reduce(
+                                                                        function(b,k){
+                                                                                b[k+"_return"] = c.future[k][0];
+                                                                                return b;
+                                                                                }
+                                                                        ,rr
+                                                                        );
+                                        
+                                                        Object  .keys(currentWeights)
+                                                                .forEach(
+                                                                        function(k){
+                                                                                rr[k+"_weight"] = currentWeights[k];
+                                                                                }
+                                                                        );
+                                                        
+                                                        //weighted product between weights and future return
+                                                        var r = Object
+                                                                .keys(currentWeights)
+                                                                .reduce(
+                                                                        function(aa,k){
+                                                                                return aa+(currentWeights[k]*c.future[k]);
+                                                                                }
+                                                                        ,0
+                                                                        );
+                                                        
+                                                        rr.STRAT_return = r;
+                                                                        
+                                                        return a.concat(rr);
+                                                        }
+                                                //thrown if we ran out of data
+                                                catch(err){
+                                                        return a;
+                                                        }
+                                                }
+                                        ,[]
+                                        )
+                                .printResults();        
+                        }
+                
+                //*****************************************************
+                
+                Array.prototype.printResults = function(){
+                        
+                        var horizon = document.getElementById('horizon').value;
+                
+                        var inCSVFormat = 
+                                d3.csv.formatRows(
+                                        this.reduce(
+                                                        function(a,c){
+                                                                return a.concat( [ Lazy(c).values().toArray().filter(function(k){return !isFunction(k);}) ] );
+                                                                }
+                                                        , [ Object.keys(this[0]) ]
+                                                )
+                                        );
+                        
+                        //append link
+                        document.getElementById('downloadResults').href = "data:text/csv;charset=utf-8," + escape(inCSVFormat); 
+                        document.getElementById('downloadResults').style.display = 'block';
+                        
+                        //get returns
+                        var stratRets = 
+                                this.map(
+                                        function(i){
+                                                return i.STRAT_return;
+                                                }
+                                        );
+                        
+                        //annualise
+                        var period = 252/horizon;
+
+                        "Total Return:".print();
+                        var tot = stratRets.reduce(function(acc,cur){return acc + cur;},0);
+                        tot.toLocaleString().print();
+        
+                        "Average:".print();
+                        var av = (period*tot/stratRets.length);
+                        av.toLocaleString().print();
+
+                        "SD:".print();
+                        var sd = (jStat.stdev(stratRets,true)*Math.sqrt(period));
+                        sd.toLocaleString().print();
+
+                        "Sharpe:".print();
+                        var sharpe = av/sd;
+                        sharpe.toLocaleString().print();
+
+                        "Median:".print();
+                        (jStat.median(stratRets)*period).toLocaleString().print();
+
+                        "MAD:".print();
+                        (jStat.meddev(stratRets)*Math.sqrt(period)).toLocaleString().print();
+
+                        "Skew:".print();
+                        var skew = jStat.skewness(stratRets);
+                        skew.toLocaleString().print()
+        
+                        "Sample Size:".print();
+                        stratRets.length.toLocaleString().print();
+        
+                        //years to profitiability
+                        //chunk returns by 1, 2, 3, etc years
+                        //return no of years where all returns are positive
+                        var years = Math.floor(stratRets.length/period)+1;
+                        
+                        var rr = Lazy    .range(1,years)
+                                .map(
+                                        function(i){
+                                                //number of chunks
+                                                var chunks = Math.floor(stratRets.length/(i*period));
+                                                
+                                                var chunkSize = i * period;
+                                                
+                                                //rets wo any leftovers
+                                                var stratRets2 = Lazy(stratRets).take(chunks*chunkSize);
+                                                
+                                                var r = stratRets2
+                                                        .chunk(chunkSize)
+                                                        .map(
+                                                                function(j){
+                                                                        return j
+                                                                                .reduce(
+                                                                                        function(a,c){
+                                                                                                return a+c;
+                                                                                                }
+                                                                                        ,0);
+                                                                        }
+                                                                )
+                                                        //reduce to number of profitable and not periods
+                                                        //expected is 50/50
+                                                        //100 is maximum
+                                                        .toArray();
+                                                
+                                                return r;
+                                                }
+                                        )
+                                .reduce(
+                                        function(a,i){
+                                                var l = i
+                                                        .filter(
+                                                                function(j){
+                                                                        return j>0;
+                                                                        }
+                                                                )
+                                                        .length;
+                                                
+                                                if (a[a.length-1].years === 0){
+                                                        return [{profitPercent:l/i.length,years:a[a.length-1].years+1}];
+                                                        }
+                                                else {
+                                                        return a.concat({profitPercent:l/i.length,years:a[a.length-1].years+1});
+                                                        }
+                                        
+                                                }
+                                        ,[{profitPercent:null,years:0}]
+                                        )
+                                ;
+                        
+                        "Years to Profitability".print();    
+                        //expected years to profitability
+                        "Expected".print();
+                        var expectedWait = Lazy(rr).find(function(i){return i.profitPercent > 0.5});
+                        
+                        //expectedWait.profitPercent.print();
+                        
+                        expectedWait === undefined ? expectedWait = "N/A" : expectedWait = expectedWait.years ;
+                        expectedWait.print();
+                        
+                        //max years to profitability
+                        "Max".print();
+                        var maxWait = Lazy(rr).find(function(i){return i.profitPercent === 1});
+                        maxWait === undefined ? maxWait = "N/A" : maxWait = maxWait.years ;
+                        maxWait.print();
+                        
+                        //standardised 10 year sharpe
+                        /*
+                        var probLoss = 1-jStat.studentt.cdf(sharpe*Math.pow(years,0.5),years - 1);
+                        "Yearly Loss Probability".print();
+                        probLoss.toLocaleString().print();
+                        
+                        
+                        var std10YrSharpe = jStat.studentt.inv(1-probLoss,9)/Math.sqrt(10);
+                        "Standardised Sharpe (10 year backtest history)".print();
+                        std10YrSharpe.toLocaleString().print();
+                        */
+                        //***************************************************************
+                        //remove pre-existing nodes
+                        var node = document.getElementById("messages");
+                        while (node.hasChildNodes()) {
+                                node.removeChild(node.lastChild);
+                                }
+                        //***************************************************************
+        
+                        tot.toLocaleString().write("Total Return:");
+                        av.toLocaleString().write("Average Return:");
+                        sd.toLocaleString().write("Std Dev:");
+                        sharpe.toLocaleString().write("Sharpe:");
+                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
+                        skew.toLocaleString().write("Skew:")
+                        stratRets.length.toLocaleString().write("Sample Size:");
+                        
+                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
+                        maxWait.write("Max Wait to Profitability:"); 
+                        
+                        }
                 
         </script>
 </html>
