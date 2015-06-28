@@ -21,6 +21,28 @@
     along with Lazy Backtesting.  If not, see <http://www.gnu.org/licenses/>.
 
 -->
+
+<!--
+Clean
+->use PCA listener model -- set up listeners after each result is found, listeners always have latest
+->remove global variables as much as poss
+->refactor...
+
+Web workers
+->break each job into seperate parts / run different samples per worker... cleaner... but doesn't work well for dailies...
+->big-o-sharpe only required for backtesting...
+->but web workers might be v useful for cleaning & formatting data also...
+->spawn then kill. spawn more than available threads(?)
+
+Clean data
+->daily: ensure contiguous wkdy returns
+->weekly: ensure 7 calendar days between returns (<= 5 returns between returns)
+->monthly: ensure 30 days between monthly returns
+->quarterly: ensure 91 days between returns
+...
+
+-->
+
 <head>
 
         <meta charset="UTF-8">
@@ -132,7 +154,6 @@
                 <p>4) Hit the back test link</p>
                 
                 <p><a href='javascript:void(0)' id="BackTest">Back Test</a></p>
-                
                 
                 <div id="messages"></div>
                 
@@ -415,7 +436,7 @@
                 
                 
                 //*****************************************************
-
+                //only print lowest sharpe results
                 Array.prototype.printResults = function(){
                         var inCSVFormat = 
                                 d3.csv.formatRows(
