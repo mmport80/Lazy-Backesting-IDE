@@ -568,7 +568,7 @@ Clean data
                         maxWait.print();
                         
                         //standardised 10 year sharpe
-                        
+                        /*
                         var probLoss = 1-jStat.studentt.cdf(sharpe*Math.pow(years,0.5),years - 1);
                         "Yearly Loss Probability".print();
                         probLoss.toLocaleString().print();
@@ -577,7 +577,7 @@ Clean data
                         var std10YrSharpe = jStat.studentt.inv(1-probLoss,9)/Math.sqrt(10);
                         "Standardised Sharpe (10 year backtest history)".print();
                         std10YrSharpe.toLocaleString().print();
-        
+                        */
                         //***************************************************************
                         //remove pre-existing nodes
                         var node = document.getElementById("messages");
@@ -590,11 +590,11 @@ Clean data
                         av.toLocaleString().write("Average Return:");
                         sd.toLocaleString().write("Std Dev:");
                         sharpe.toLocaleString().write("Sharpe:");
-                        std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
+                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
                         skew.toLocaleString().write("Skew:")
                         stratRets.length.toLocaleString().write("Sample Size:");
                         
-                        probLoss.toLocaleString().write("Yearly Loss Probability:");
+                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
                         maxWait.write("Max Wait to Profitability:"); 
                         //expectedWait.write("Expected:");
                         //.write("Max:");
