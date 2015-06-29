@@ -39,6 +39,7 @@
         <script type="text/javascript" src="lib/networking2.js"></script>
         <script type="text/javascript" src="lib/utility.js"></script>
         <script type="text/javascript" src="lib/strategyHelpers.js"></script>
+        <script type="text/javascript" src="lib/dataHelpers.js"></script>
        
         <style>
                 #title{font-size:6em}
@@ -205,15 +206,14 @@
                 
                 //*****************************************************
                 
-                //send off to worker, process in the background...
-                //everything else gets sent to same worker
-                //so requests gets queued up on one worker
-                //gui stays fluent, works is backgrounded
                 document.getElementById('horizon')
                         .addEventListener(
                                 "change", 
                                 //format data if clean data is available
-                                function(){cd != null ? fd = cd.formatData() : null;}
+                                function(){
+                                        var horizon = document.getElementById('horizon').value;
+                                        cd != null ? fd = cd.formatData(horizon) : null;
+                                        }
                                 );
                 
         
@@ -264,16 +264,71 @@
                         }
                         );
                 
+
                 //*****************************************************
-                //get data
-         
-                function getData(source,ticker,y){
+                    
+                    
+                var formatCleanWorker = null;
+                
+                
+                function setUpformatCleanWorker(){
+                        formatCleanWorker != null ? formatCleanWorker.terminate() : null;
+                        //disable backtest link
+                
+                        formatCleanWorker = new Worker('worker.js');
+                
+                        formatCleanWorker.addEventListener(
+                                'message', 
+                                function(e) {
+                                        //save down global data once available
+                                        cd = e.data[0];
+                                        "Data cleaned".write();
+                                        fd = Lazy(e.data[1]);
+                                        "Data formatted".write();
+                                        
+                                        }
+                                , false
+                                );
+
                         
+                        }
+                         
+                //*****************************************************
+                //add assets
+                //call for data
+                function addAsset(no){
+                        var ticker = document.getElementById('ticker'+no).value;
                         
-                        return getQuandlData(source,ticker)
-                                .take(1)
-                                .value()[0]
-                                .map(
+                        ticker.write("Requesting prices for:","availableData");
+                        
+                        var key = document.getElementById('key').value;
+                        key = 'Fp6cFhibc5xvL2pN3dnu';
+                        
+                        getQuandlCall(
+                                document.getElementById('source'+no).value,
+                                document.getElementById('ticker'+no).value
+                                ,key
+                                )
+                                .xhr(
+                                        addAssetPartTwo,
+                                        no
+                                        );
+                        
+                        }
+                
+                //after data has been pulled down - 'i'
+                var addAssetPartTwo = function(i,no){
+                        
+                        "OK".write("Status:","availableData");
+                        
+                        //assuming this matches original call!
+                        var y = document.getElementById('yield'+no).checked;
+                        var ticker = document.getElementById('ticker'+no).value;
+                        var horizon = document.getElementById('horizon').value;
+                
+                        var prices =
+                                //map data from quandl
+                                i.map(
                                         function(i){
                                                 var r = null;
                                                 y == true ?
@@ -283,44 +338,16 @@
                                                 return r;
                                                 }
                                         );
-                        }
-
-                //*****************************************************
-                //add assets
-                    
                 
-                function addAsset(no){
-                        var ticker = document.getElementById('ticker'+no).value;
-                        
-                        ticker.write("Requesting prices for:","availableData");
-                        
-                        //var newData = 
-                        var i = getData(
-                                document.getElementById('source'+no).value,
-                                ticker,
-                                document.getElementById('yield'+no).checked
-                                );
-                                
-                        "OK".write("Status:","availableData");
-                        
-                        //add data to 'addAsset listener'
-                        //set listeners function
-                        //feed need data into each
-                        //append to existing data
-                        
-                        //i.print();
-                        
-                        //raw data
-                        data = data.concat({ticker: ticker, prices: i});
-                        //clean
-                        cd = data.cleanData();
-                        //format
-                        fd = cd.formatData();
-                        
-                                        
-                        
-                        
+                        //global raw data saved down
+                        data = data.concat({ticker: ticker, prices: prices});
+
+                        setUpformatCleanWorker();
+
+                        //send worker data
+                        formatCleanWorker.postMessage([data,horizon]);
                         }
+                
                 
                 
                 //*****************************************************
@@ -329,120 +356,10 @@
                 //return checking (i.e. that returns encompass the required horizon) should be done later
                 //parallelable?
                 //if run in asynced process as a whole job (not chunks) kill once newer cleandata has been kicked off... only one should run at any time.
-                var cleanData = function(){
-                        var _this = this;
-                        return Lazy(this)
-                                .reduce(function(acc,c){return acc.concat(c.prices);},Lazy([]))
-                                //ensure dates are matched for every assetall the way down the line
-                                .groupBy(function(i){return i.date })
-                                //make sure the lengths fo arrays at every date are the same
-                                .filter(function(i){return i.length === _this.length;})
-                                //bring objects together into one big array
-                                .flatten()
-                                //.filter(function(i){return i.ticker != undefined;})
-                                .groupBy(function(j){return j.ticker})
-                                //convert to object -> {ticker:prices,...}
-                                .reduce(
-                                        function(acc,c){
-                                                //console.log(c);
-                                                acc[c[0].ticker] = c;
-                                                return acc;  
-                                                }
-                                        , {}
-                                        );
-                        }
-                
-                Object.defineProperty(
-                        Object.prototype, 
-                        'cleanData',
-                        {
-                                value: cleanData,
-                                writable: true,
-                                configurable: true,
-                                enumerable: false
-                                }
-                        );  
-                
-                //*****************************************************
-                function clone(obj) {
-                        var copy;
-                        // Handle the 3 simple types, and null or undefined
-                        if (null == obj || "object" != typeof obj) return obj;
-                        // Handle Date
-                        if (obj instanceof Date) {
-                                copy = new Date();
-                                copy.setTime(obj.getTime());
-                                return copy;
-                                }
-                        // Handle Array
-                        if (obj instanceof Array) {
-                                copy = [];
-                                for (var i = 0, len = obj.length; i < len; i++) {
-                                        copy[i] = clone(obj[i]);
-                                        }
-                                return copy;
-                                }
-                        // Handle Object
-                        if (obj instanceof Object) {
-                                copy = {};
-                                for (var attr in obj) {
-                                        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
-                                }
-                                return copy;
-                                }
-                                throw new Error("Unable to copy obj! Its type isn't supported.");
-                        }
-                
+               
                 //*****************************************************
                 
-                Object.defineProperty(
-                        Object.prototype, 
-                        'formatData',
-                        {
-                                value: function(){
-                                        var _this = this;
-                                        return Lazy.generate(
-                                                function() {
-                                                        //update
-                                                        return function() {
-                                                                var horizon = document.getElementById('horizon').value;
-                                                                //convert to future/history object
-                                                                var ret = Object
-                                                                        .keys(_this)
-                                                                        .reduce(
-                                                                                function(acc,k){
-                                                                                        //horizon +1 of prices in order to get horizon's worth of returns
-                                                                                        //generate return
-                                                                                        acc.date = _this[k][0].date;
-                                                                                        acc.future[k] = [ _this[k][0], _this[k][horizon] ].returns();;
-                                                                                        acc.history[k] = _this[k].slice(horizon, _this[k].length );
-                                                                                        return acc;
-                                                                                        }
-                                                                                ,{date:"", future:{}, history:{}}
-                                                                                );
-                                                                //knock off tops of each time series
-                                                                _this = Object
-                                                                        .keys(_this)
-                                                                        .reduce(
-                                                                                function(acc,k){
-                                                                                        acc[k] = _this[k].slice(horizon, _this[k].length );
-                                                                                        return acc;
-                                                                                        }
-                                                                                ,{}
-                                                                                );
-                                                                return ret;
-                                                                };
-                                                        }()
-                                                //number of backtests with current horizon
-                                                //horizon worth of return require horizon+1 of prices
-                                                , Math.floor((_this[Object.keys(_this)[0]].length-1)/document.getElementById('horizon').value)
-                                                );
-                                        },
-                                writable: true,
-                                configurable: true,
-                                enumerable: false
-                                }
-                        );     
+                  
         
                 
                 //*****************************************************
@@ -502,6 +419,8 @@
                 //*****************************************************
                 
                 Array.prototype.printResults = function(){
+                        
+                        this.print();
                         
                         var horizon = document.getElementById('horizon').value;
                 
