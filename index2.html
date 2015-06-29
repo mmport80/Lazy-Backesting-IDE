@@ -19,32 +19,9 @@
 
     You should have received a copy of the GNU Affero General Public License
     along with Lazy Backtesting.  If not, see <http://www.gnu.org/licenses/>.
-
 -->
-
-<!--
-Clean
-->use PCA listener model -- set up listeners after each result is found, listeners always have latest
-->remove global variables as much as poss
-->refactor...
-
-Web workers
-->break each job into seperate parts / run different samples per worker... cleaner... but doesn't work well for dailies...
-->big-o-sharpe only required for backtesting...
-->but web workers might be v useful for cleaning & formatting data also...
-->spawn then kill. spawn more than available threads(?)
-
-Clean data
-->daily: ensure contiguous wkdy returns
-->weekly: ensure 7 calendar days between returns (<= 5 returns between returns)
-->monthly: ensure 30 days between monthly returns
-->quarterly: ensure 91 days between returns
-...
-
--->
-
 <head>
-
+        
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   
@@ -52,18 +29,17 @@ Clean data
         
         <script type="text/javascript" src="lib/lazy.js"></script>
         <script type="text/javascript" src="lib/jstat.min.js"></script>
-        <script type="text/javascript" src="lib/networking.js"></script>
-        <script type="text/javascript" src="lib/utility.js"></script>
-        <script type="text/javascript" src="lib/strategyHelpers.js"></script>
         <script type="text/javascript" src="lib/d3.min.js"></script>
-       
-        
         <script type="text/javascript" charset="utf-8" src="lib/numeric-1.2.6.min.js"></script>
        
         <script src="lib/codemirror.js"></script>
         <link rel="stylesheet" href="lib/codemirror.css">
         <script src="lib/javascript.js"></script>
         
+        <script type="text/javascript" src="lib/networking2.js"></script>
+        <script type="text/javascript" src="lib/utility.js"></script>
+        <script type="text/javascript" src="lib/strategyHelpers.js"></script>
+       
         <style>
                 #title{font-size:6em}
                 #downloadResults{display:none;}
@@ -107,7 +83,7 @@ Clean data
                         <input type="text" id='ticker2' value='SKEW'/>
                         Yield
                         <input type="checkbox" id="yield2" value="true" autocomplete="on"/>
-                        <a href='javascript:void(0)' id='addAsset2'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset2'>ADD</a>
                 </div>
 
                 <div>
@@ -121,7 +97,7 @@ Clean data
                         <input type="text" id='ticker1' value='INDEX_GSPC' value="true" autocomplete="on"/>
                         Yield
                         <input type="checkbox" id="yield1" autocomplete="on"/>
-                        <a href='javascript:void(0)' id='addAsset1'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset1'>ADD</a>
                 </div>
                 
                 <div>
@@ -134,14 +110,14 @@ Clean data
                         <input type="text" id='ticker3' value='INDEX_IRX' value="true" autocomplete="on"/>
                         Yield
                         <input type="checkbox" id="yield3" autocomplete="on" checked />
-                        <a href='javascript:void(0)' id='addAsset3'>Add</a>
+                        <a href='javascript:void(0)' id='addAsset3'>ADD</a>
                 </div>
                 
                 <hr />  
                 
                 <div id="availableData"></div>
                 
-                
+                        
 
                 <hr />
                 
@@ -153,7 +129,8 @@ Clean data
                 
                 <p>4) Hit the back test link</p>
                 
-                <p><a href='javascript:void(0)' id="BackTest">Back Test</a></p>
+                <p><a href='javascript:void(0)' id="backTest">Back Test</a></p>
+                
                 
                 <div id="messages"></div>
                 
@@ -173,40 +150,88 @@ Clean data
 
                 <p>Need help? Watch the screencast:</p>
                 
+                <!--
                 <iframe width="960" height="720" src="https://www.youtube-nocookie.com/embed/dWYPNS_mc6U?rel=0" frameborder="0" allowfullscreen></iframe>
-                
+                -->
         </form>
 </body>
 
         <script>
                 "use strict"
         
-        
                 //*****************************************************
-                //*****************************************************
-                //*****************************************************
-                //Global Variables
+                //globals        
                 
-                //store of asset data added
-                var globalInputs = [];
-                //cleaned data
-                var cd = [];
-                //formatted data
-                var fd = [];
-                //keeps track of number of assets added
-                var noOfAssets = 0;
-                //names of all asset keys
-                var assetKeys = [];
-        
-                var horizon = +document.getElementById('horizon').value;
-        
-                //global data - 
-                //cd - 
-                //fd - 
-        
+                var data = [];
+                var fd = null;
+                var cd = null;
+                
+                //*****************************************************
+                //set listeners
+                
+                document.getElementById('addAsset1')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(1);}
+                                );
+                document.getElementById('addAsset2')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(2);}
+                                );
+                document.getElementById('addAsset3')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(3);}
+                                );
+                document.getElementById('backTest')
+                        .addEventListener(
+                                "click", 
+                                function(){setBackTestListener();}
+                                );
+                
+                //*****************************************************
+                function setBackTestListener(){
+                        var code = editor.getValue();
+                        var js = 
+                                "var strategyLogic = function(data){var weight = new Object();\n"+
+                                code+"\n"+
+                                "return weight;}\n"+
+                                "backTest();\n";
+                        var s = document.createElement('script');
+                        s.textContent = js;
+                        document.body.appendChild(s);
+                        }
+                
+                //*****************************************************
+                
+                //send off to worker, process in the background...
+                //everything else gets sent to same worker
+                //so requests gets queued up on one worker
+                //gui stays fluent, works is backgrounded
+                document.getElementById('horizon')
+                        .addEventListener(
+                                "change", 
+                                //format data if clean data is available
+                                function(){cd != null ? fd = cd.formatData() : null;}
+                                );
+                
         
                 //*****************************************************
-                //*****************************************************
+                //for some reason I can't put this in a seperate 'utility.js' file...
+                   
+                Object.defineProperty(
+                        Object.prototype, 
+                        'print',
+                        {
+                                value: function(){ return console.log(this); },
+                                writable: true,
+                                configurable: true,
+                                enumerable: false
+                                }
+                        );
+                
+        
                 //*****************************************************
                 //Code Mirror
                 
@@ -239,85 +264,137 @@ Clean data
                         }
                         );
                 
-        
                 //*****************************************************
-                //*****************************************************
-                //*****************************************************
-                //for some reason I can't put this in a seperate 'utility.js' file...
-                   
-                Object.defineProperty(
-                        Object.prototype, 
-                        'print',
-                        {
-                                value: function(){ return console.log(this); },
-                                writable: true,
-                                configurable: true,
-                                enumerable: false
-                                }
-                        );
-                
-                //*****************************************************
-                //add to global data array
-                
-                
-                Object.defineProperty(
-                        Object.prototype, 
-                        'addToGlobalData',
-                        {
-                                value: function(isYield){ 
-                                        var _this = this;
+                //get data
+         
+                function getData(source,ticker,y){
                         
-                                        return Lazy(this.prices)
-                                                .map(
-                                                        function(i){
-                                                                if(isYield){
-                                                                        return {ticker:_this.ticker,date:i[0],price:  Math.exp(-i[1]/100) };
-                                                                        }
-                                                                else{
-                                                                        return {ticker:_this.ticker,date:i[0],price:i[1]};
-                                                                        }
-                                                                }
-                                                        )
-                                                .union(globalInputs);
-                                        },
-                                writable: true,
-                                configurable: true,
-                                enumerable: false
-                                }
-                        );     
+                        
+                        return getQuandlData(source,ticker)
+                                .take(1)
+                                .value()[0]
+                                .map(
+                                        function(i){
+                                                var r = null;
+                                                y == true ?
+                                                        r = {ticker: ticker, date: new Date(i[0]), datum:i[1].yieldToDsft()} 
+                                                        :
+                                                        r = {ticker: ticker, date: new Date(i[0]), datum:i[1]};
+                                                return r;
+                                                }
+                                        );
+                        }
+
+                //*****************************************************
+                //add assets
+                    
+                
+                function addAsset(no){
+                        var ticker = document.getElementById('ticker'+no).value;
+                        
+                        ticker.write("Requesting prices for:","availableData");
+                        
+                        //var newData = 
+                        var i = getData(
+                                document.getElementById('source'+no).value,
+                                ticker,
+                                document.getElementById('yield'+no).checked
+                                );
+                                
+                        "OK".write("Status:","availableData");
+                        
+                        //add data to 'addAsset listener'
+                        //set listeners function
+                        //feed need data into each
+                        //append to existing data
+                        
+                        //i.print();
+                        
+                        //raw data
+                        data = data.concat({ticker: ticker, prices: i});
+                        //clean
+                        cd = data.cleanData();
+                        //format
+                        fd = cd.formatData();
+                        
+                                        
+                        
+                        
+                        }
                 
                 
                 //*****************************************************
+                //only run after add asset - horizon doesn't affect this
                 //remove mismatching dates
-                //how does this work with only one asset? -- probably ok!
+                //return checking (i.e. that returns encompass the required horizon) should be done later
+                //parallelable?
+                //if run in asynced process as a whole job (not chunks) kill once newer cleandata has been kicked off... only one should run at any time.
+                var cleanData = function(){
+                        var _this = this;
+                        return Lazy(this)
+                                .reduce(function(acc,c){return acc.concat(c.prices);},Lazy([]))
+                                //ensure dates are matched for every assetall the way down the line
+                                .groupBy(function(i){return i.date })
+                                //make sure the lengths fo arrays at every date are the same
+                                .filter(function(i){return i.length === _this.length;})
+                                //bring objects together into one big array
+                                .flatten()
+                                //.filter(function(i){return i.ticker != undefined;})
+                                .groupBy(function(j){return j.ticker})
+                                //convert to object -> {ticker:prices,...}
+                                .reduce(
+                                        function(acc,c){
+                                                //console.log(c);
+                                                acc[c[0].ticker] = c;
+                                                return acc;  
+                                                }
+                                        , {}
+                                        );
+                        }
                 
                 Object.defineProperty(
                         Object.prototype, 
                         'cleanData',
                         {
-                                value: function(){
-                                        return this
-                                                //ensure dates are matched for every assetall the way down the line
-                                                .groupBy(function(i){return i.date })
-                                                //make sure the lengths fo arrays at every date are the same
-                                                .filter(function(i){return i.length === noOfAssets;})
-                                                //bring objects together into one big array
-                                                .flatten()
-                                                //.filter(function(i){return i.ticker != undefined;})
-                                                .groupBy(function(j){return j.ticker})
-                                                .filter(function(i){return !isFunction(i);})
-                                                ;
-                                        },
+                                value: cleanData,
                                 writable: true,
                                 configurable: true,
                                 enumerable: false
                                 }
-                        );     
-                
+                        );  
                 
                 //*****************************************************
+                function clone(obj) {
+                        var copy;
+                        // Handle the 3 simple types, and null or undefined
+                        if (null == obj || "object" != typeof obj) return obj;
+                        // Handle Date
+                        if (obj instanceof Date) {
+                                copy = new Date();
+                                copy.setTime(obj.getTime());
+                                return copy;
+                                }
+                        // Handle Array
+                        if (obj instanceof Array) {
+                                copy = [];
+                                for (var i = 0, len = obj.length; i < len; i++) {
+                                        copy[i] = clone(obj[i]);
+                                        }
+                                return copy;
+                                }
+                        // Handle Object
+                        if (obj instanceof Object) {
+                                copy = {};
+                                for (var attr in obj) {
+                                        if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+                                }
+                                return copy;
+                                }
+                                throw new Error("Unable to copy obj! Its type isn't supported.");
+                        }
+                
                 //*****************************************************
-                        //
+                
                 Object.defineProperty(
                         Object.prototype, 
                         'formatData',
@@ -326,49 +403,39 @@ Clean data
                                         var _this = this;
                                         return Lazy.generate(
                                                 function() {
-                                                        //init
-                                                        var ccdl2 = _this.toObject();
-                                                        
-                                                        var ccdl = assetKeys
-                                                                .reduce(
-                                                                        function(acc,k){
-                                                                                acc[k] = Lazy(ccdl2[k]).last(ccdl2[k].length).toArray();
-                                                                                return acc;
-                                                                                }
-                                                                        ,{}
-                                                                        );
-                                                        
                                                         //update
                                                         return function() {
+                                                                var horizon = document.getElementById('horizon').value;
                                                                 //convert to future/history object
-                                                                var ret = assetKeys
+                                                                var ret = Object
+                                                                        .keys(_this)
                                                                         .reduce(
                                                                                 function(acc,k){
                                                                                         //horizon +1 of prices in order to get horizon's worth of returns
                                                                                         //generate return
-                                                                                        acc.date = ccdl[k][0].date;
-                                                                                        acc.future[k] = [ ccdl[k][0], ccdl[k][horizon] ].returns();
-                                                                                        acc.history[k] = ccdl[k].slice(horizon, ccdl[k].length );
+                                                                                        acc.date = _this[k][0].date;
+                                                                                        acc.future[k] = [ _this[k][0], _this[k][horizon] ].returns();;
+                                                                                        acc.history[k] = _this[k].slice(horizon, _this[k].length );
                                                                                         return acc;
                                                                                         }
                                                                                 ,{date:"", future:{}, history:{}}
                                                                                 );
                                                                 //knock off tops of each time series
-                                                                ccdl = assetKeys
+                                                                _this = Object
+                                                                        .keys(_this)
                                                                         .reduce(
                                                                                 function(acc,k){
-                                                                                        acc[k] = ccdl[k].slice(horizon, ccdl[k].length );
+                                                                                        acc[k] = _this[k].slice(horizon, _this[k].length );
                                                                                         return acc;
                                                                                         }
                                                                                 ,{}
                                                                                 );
-                                        
                                                                 return ret;
                                                                 };
                                                         }()
                                                 //number of backtests with current horizon
                                                 //horizon worth of return require horizon+1 of prices
-                                                , Math.floor( (cd.get(assetKeys[0]).length-1) / horizon )
+                                                , Math.floor((_this[Object.keys(_this)[0]].length-1)/document.getElementById('horizon').value)
                                                 );
                                         },
                                 writable: true,
@@ -376,66 +443,68 @@ Clean data
                                 enumerable: false
                                 }
                         );     
-                
+        
                 
                 //*****************************************************
+                
                 function backTest(){
-                        fd.reduce(
-                                function(a,c){
-                                        //throws an error if strategy logic asks for more data than available
-                                        try {
-                                                var currentWeights = strategyLogic(c.history); 
-                                
-                                                var rr = {};
-                                
-                                                rr.date = c.date;
-                                
-                                                rr = Object
-                                                        .keys(c.future)
-                                                        .reduce(
-                                                                function(b,k){
-                                                                        b[k+"_return"] = c.future[k][0];
-                                                                        return b;
-                                                                        }
-                                                                ,rr
-                                                                );
-                                
-                                                Object  .keys(currentWeights)
-                                                        .forEach(
-                                                                function(k){
-                                                                        rr[k+"_weight"] = currentWeights[k];
-                                                                        }
-                                                                );
-                                                
-                                                //weighted product between weights and future return
-                                                var r = Object
-                                                        .keys(currentWeights)
-                                                        .reduce(
-                                                                function(aa,k){
-                                                                        return aa+(currentWeights[k]*c.future[k]);
-                                                                        }
-                                                                ,0
-                                                                );
-                                                
-                                                rr.STRAT_return = r;
-                                                                
-                                                return a.concat(rr);
+                        fd      .reduce(
+                                        function(a,c){
+                                                //throws an error if strategy logic asks for more data than available
+                                                try {
+                                                        var currentWeights = strategyLogic(c.history); 
+                                        
+                                                        var rr = {};
+                                        
+                                                        rr.date = c.date;
+                                        
+                                                        rr = Object
+                                                                .keys(c.future)
+                                                                .reduce(
+                                                                        function(b,k){
+                                                                                b[k+"_return"] = c.future[k][0];
+                                                                                return b;
+                                                                                }
+                                                                        ,rr
+                                                                        );
+                                        
+                                                        Object  .keys(currentWeights)
+                                                                .forEach(
+                                                                        function(k){
+                                                                                rr[k+"_weight"] = currentWeights[k];
+                                                                                }
+                                                                        );
+                                                        
+                                                        //weighted product between weights and future return
+                                                        var r = Object
+                                                                .keys(currentWeights)
+                                                                .reduce(
+                                                                        function(aa,k){
+                                                                                return aa+(currentWeights[k]*c.future[k]);
+                                                                                }
+                                                                        ,0
+                                                                        );
+                                                        
+                                                        rr.STRAT_return = r;
+                                                                        
+                                                        return a.concat(rr);
+                                                        }
+                                                //thrown if we ran out of data
+                                                catch(err){
+                                                        return a;
+                                                        }
                                                 }
-                                        //thrown if we ran out of data
-                                        catch(err){
-                                                return a;
-                                                }
-                                        }
-                                ,[]
-                                )
-                                .printResults();
+                                        ,[]
+                                        )
+                                .printResults();        
                         }
                 
-                
-                
                 //*****************************************************
-                //only print lowest sharpe results
+                
                 Array.prototype.printResults = function(){
+                        
+                        var horizon = document.getElementById('horizon').value;
+                
                         var inCSVFormat = 
                                 d3.csv.formatRows(
                                         this.reduce(
@@ -548,7 +617,6 @@ Clean data
                                         )
                                 ;
                         
-                        
                         "Years to Profitability".print();    
                         //expected years to profitability
                         "Expected".print();
@@ -566,7 +634,7 @@ Clean data
                         maxWait.print();
                         
                         //standardised 10 year sharpe
-                        
+                        /*
                         var probLoss = 1-jStat.studentt.cdf(sharpe*Math.pow(years,0.5),years - 1);
                         "Yearly Loss Probability".print();
                         probLoss.toLocaleString().print();
@@ -575,7 +643,7 @@ Clean data
                         var std10YrSharpe = jStat.studentt.inv(1-probLoss,9)/Math.sqrt(10);
                         "Standardised Sharpe (10 year backtest history)".print();
                         std10YrSharpe.toLocaleString().print();
-        
+                        */
                         //***************************************************************
                         //remove pre-existing nodes
                         var node = document.getElementById("messages");
@@ -588,19 +656,14 @@ Clean data
                         av.toLocaleString().write("Average Return:");
                         sd.toLocaleString().write("Std Dev:");
                         sharpe.toLocaleString().write("Sharpe:");
-                        std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
+                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
                         skew.toLocaleString().write("Skew:")
                         stratRets.length.toLocaleString().write("Sample Size:");
                         
-                        probLoss.toLocaleString().write("Yearly Loss Probability:");
+                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
                         maxWait.write("Max Wait to Profitability:"); 
-                        //expectedWait.write("Expected:");
-                        //.write("Max:");
-                        
                         
                         }
                 
-                
         </script>
-        <script type="text/javascript" src="lib/listeners.js"></script>
 </html>
