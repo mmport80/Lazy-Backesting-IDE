@@ -273,79 +273,80 @@
                 
                 function setUpformatCleanWorker(){
                         formatCleanWorker != null ? formatCleanWorker.terminate() : null;
-                        //disable backtest link
-                
-                        formatCleanWorker = new Worker('worker.js');
+                        
+                        //one worker pulls in data & adds to prev data
+                        //one worker cleans & formats
+                        //one worker formats
+                        //one worker backtests
+                        
+                        //horizon maps cleansed to formatted data
+                        //data 'pulls' -> pulls, adds to global, cleans & formats 
+                        //backtest just backtests
+                        
+                        //any thread can be terminated apart from pulling data in
+                        //if a new formatting job comes along it prob has up-to-date info
+                        //so kill the old one and run the up-to-date version
+                        
+                        formatCleanWorker = new Worker('formatWorker.js');
                 
                         formatCleanWorker.addEventListener(
                                 'message', 
                                 function(e) {
                                         //save down global data once available
                                         cd = e.data[0];
-                                        "Data cleaned".write();
+                                        "Data cleaned".write("","availableData");
                                         fd = Lazy(e.data[1]);
-                                        "Data formatted".write();
-                                        
+                                        "Data formatted".write("","availableData");
                                         }
                                 , false
                                 );
 
                         
                         }
+                    
+                //always running, never terminated
+                //multiple adds queue up behind each other
+                var addMarketDataWorker = new Worker('addMarketDataWorker.js');
+                      
+                //after
+                addMarketDataWorker.addEventListener(
+                        'message', 
+                        function(e) {
+                                //send data back to parent thread
+                
+                                "OK".write("Status:","availableData");
+                                
+                                var d = e.data;
+                                
+                                //global raw data saved down
+                                data = data.concat({ticker: d.ticker, prices: d.prices});
+
+                                setUpformatCleanWorker();
+
+                                //send worker data
+                                formatCleanWorker.postMessage([data,d.horizon]);
+                                }
+                        , false
+                        );
                          
                 //*****************************************************
                 //add assets
                 //call for data
                 function addAsset(no){
                         var ticker = document.getElementById('ticker'+no).value;
+                        var y = document.getElementById('yield'+no).checked;
+                        var horizon = document.getElementById('horizon').value;
+                        var source = document.getElementById('source'+no).value;
                         
                         ticker.write("Requesting prices for:","availableData");
                         
                         var key = document.getElementById('key').value;
                         key = 'Fp6cFhibc5xvL2pN3dnu';
                         
-                        getQuandlCall(
-                                document.getElementById('source'+no).value,
-                                document.getElementById('ticker'+no).value
-                                ,key
-                                )
-                                .xhr(
-                                        addAssetPartTwo,
-                                        no
-                                        );
-                        
-                        }
-                
-                //after data has been pulled down - 'i'
-                var addAssetPartTwo = function(i,no){
-                        
-                        "OK".write("Status:","availableData");
-                        
-                        //assuming this matches original call!
-                        var y = document.getElementById('yield'+no).checked;
-                        var ticker = document.getElementById('ticker'+no).value;
-                        var horizon = document.getElementById('horizon').value;
-                
-                        var prices =
-                                //map data from quandl
-                                i.map(
-                                        function(i){
-                                                var r = null;
-                                                y == true ?
-                                                        r = {ticker: ticker, date: new Date(i[0]), datum:i[1].yieldToDsft()} 
-                                                        :
-                                                        r = {ticker: ticker, date: new Date(i[0]), datum:i[1]};
-                                                return r;
-                                                }
-                                        );
-                
-                        //global raw data saved down
-                        data = data.concat({ticker: ticker, prices: prices});
-
-                        setUpformatCleanWorker();
-
-                        //send worker data
-                        formatCleanWorker.postMessage([data,horizon]);
+                        //send above vars to worker
+                        addMarketDataWorker.postMessage(
+                                {ticker:ticker,y:y,horizon:horizon,key:key,source:source}
+                                );
                         }
                 
                 
