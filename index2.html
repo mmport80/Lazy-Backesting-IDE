@@ -313,7 +313,6 @@
                         'message', 
                         function(e) {
                                 //send data back to parent thread
-                
                                 "OK".write("Status:","availableData");
                                 
                                 var d = e.data;
@@ -338,15 +337,26 @@
                         var horizon = document.getElementById('horizon').value;
                         var source = document.getElementById('source'+no).value;
                         
-                        ticker.write("Requesting prices for:","availableData");
-                        
                         var key = document.getElementById('key').value;
                         key = 'Fp6cFhibc5xvL2pN3dnu';
                         
-                        //send above vars to worker
-                        addMarketDataWorker.postMessage(
-                                {ticker:ticker,y:y,horizon:horizon,key:key,source:source}
-                                );
+                        if (data.filter(
+                                function(i){
+                                        return i.ticker === ticker;
+                                        }
+                                )
+                                .length === 0
+                                ) {                                                                
+                                ticker.write("Requesting prices for:","availableData");
+                                
+                                //send above vars to worker
+                                addMarketDataWorker.postMessage(
+                                        {ticker:ticker,y:y,horizon:horizon,key:key,source:source}
+                                        );
+                                }
+                        else    {
+                                "".write("Ticker already added","availableData");
+                                }
                         }
                 
                 
