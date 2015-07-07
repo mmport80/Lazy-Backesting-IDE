@@ -218,7 +218,6 @@
                                         "Data formatted".write("","availableData");
                                         }
                                 );
-                
         
                 //*****************************************************
                 //for some reason I can't put this in a seperate 'utility.js' file...
@@ -384,14 +383,10 @@
                         
                         var horizon = +document.getElementById('horizon').value;
                         
-                        "xoxo".print();
-                        fd.toArray().print();
-                        
                         fd      .reduce(
                                         function(a,c){
                                                 //throws an error if strategy logic asks for more data than available
                                                 try {
-                                                        
                                                         var currentWeights = strategyLogic(c.history); 
                                                         
                                                         //build new object
@@ -447,7 +442,6 @@
                         
                         //can change between data generation and call
                         "**********************************************************************".print();
-                        
                         var inCSVFormat = 
                                 d3.csv.formatRows(
                                         this.reduce(
