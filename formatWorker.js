@@ -10,13 +10,10 @@ self.addEventListener(
                 var data = e.data[0];
                 var horizon = e.data[1];
                 
-                
-                
                 //clean
                 cd = data.cleanData();
                 //format
                 fd = cd.formatData(horizon);
-                
                 
                 self.postMessage([cd,fd.toArray()]);
                 },
