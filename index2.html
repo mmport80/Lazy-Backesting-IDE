@@ -164,7 +164,7 @@
                 //globals        
                 
                 var data = [];
-                var fd = null;
+                //var fd = null;
                 var cd = null;
                 
                 //*****************************************************
@@ -214,8 +214,8 @@
                                 //format data if clean data is available
                                 function(){
                                         var horizon = +document.getElementById('horizon').value;
-                                        cd != null ? fd = cd.formatData(horizon) : null;
-                                        "Data formatted".write("","availableData");
+                                        //cd != null ? fd = cd.formatData(horizon) : null;
+                                        //"Data formatted".write("","availableData");
                                         }
                                 );
         
@@ -295,14 +295,14 @@
                                 'message', 
                                 function(e) {
                                         //save down global data once available
-                                        cd = e.data[0];
+                                        cd = e.data;
                                         
                                         //save down truncated data
-                                        data = Object.keys(cd).map(function(k){return {ticker:cd[k][0].ticker, prices:cd[k]};});
+                                        //data = Object.keys(cd).map(function(k){return {ticker:cd[k][0].ticker, prices:cd[k]};});
                                         
                                         "Data cleaned".write("","availableData");
-                                        fd = Lazy(e.data[1]);
-                                        "Data formatted".write("","availableData");
+                                        //fd = Lazy(e.data[1]);
+                                        //"Data formatted".write("","availableData");
                                         }
                                 , false
                                 );
@@ -366,6 +366,8 @@
                         }
                 
                 
+                //reduce
+                
                 
                 //*****************************************************
                 //only run after add asset - horizon doesn't affect this
@@ -383,17 +385,98 @@
                         
                         var horizon = +document.getElementById('horizon').value;
                         
+                        //[...,{future:,history:},...]
+                        //build from bottom up
+                        //foldr
+                        //future is a horizon
+                        
+                        
+                        cd      .reverse()
+                                .reduce(
+                                        function(a,c){
+                                        
+                                                var rr = {};
+                                        
+                                                rr.sofar = a.sofar.concat([c]);
+                                        
+                                                rr.result = a   .result
+                                                                .concat( 
+                                                                        [
+                                                                        Lazy(a.sofar)
+                                                                                .flatten()
+                                                                                .groupBy(
+                                                                                        function(j){
+                                                                                                return j.ticker;
+                                                                                                }
+                                                                                        )
+                                                                                .toArray()
+                                                                        ]
+                                                                        );
+                                                /*
+                                                //throws an error if strategy logic asks for more data than available
+                                                try {
+                                                        var future = [ a.sofar[0], a.sofar[horizon] ].returns();
+                                                        var history = a.slice(horizon+1);
+                                                
+                                                        rr.result = a    .result
+                                                                        .concat({future:future,history:history});
+                                                        
+                                                        var currentWeights = strategyLogic(history); 
+                                                        //build new object
+                                                        var rr = {};
+                                                        rr.date = c[0].date;
+                                                        rr = Object
+                                                                .keys(future)
+                                                                .reduce(
+                                                                        function(b,k){
+                                                                                b[k+"_return"] = c.future[k][0];
+                                                                                return b;
+                                                                                }
+                                                                        ,rr
+                                                                        );
+                                                        Object  .keys(currentWeights)
+                                                                .forEach(
+                                                                        function(k){
+                                                                                rr[k+"_weight"] = currentWeights[k];
+                                                                                }
+                                                                        );
+                                                        var r = Object
+                                                                .keys(currentWeights)
+                                                                .reduce(
+                                                                        function(aa,k){
+                                                                                return aa+(currentWeights[k]*c.future[k]);
+                                                                                }
+                                                                        ,0
+                                                                        );
+                                                        rr.STRAT_return = r;
+                                                        return a.concat(rr);
+                                                        
+                                                        }
+                                                
+                                                //thrown if we ran out of data
+                                                catch(err){
+                                                        //do nothing
+                                                        }
+                                                */
+                                                
+                                                //return strategy return or nothing if not enough data / or exception
+                                                //and return returns so far!
+                                                return rr;
+                                                }
+                                        //rets so far, summary
+                                        , {sofar:[],result:[]}
+                                        )
+                                .print();
+                        
+                        /*
                         fd      .reduce(
                                         function(a,c){
                                                 //throws an error if strategy logic asks for more data than available
                                                 try {
                                                         var currentWeights = strategyLogic(c.history); 
-                                                        
                                                         //build new object
                                                         var rr = {};
-                                        
                                                         rr.date = c.date;
-                                        
                                                         rr = Object
                                                                 .keys(c.future)
                                                                 .reduce(
@@ -403,15 +486,12 @@
                                                                                 }
                                                                         ,rr
                                                                         );
-                                        
                                                         Object  .keys(currentWeights)
                                                                 .forEach(
                                                                         function(k){
                                                                                 rr[k+"_weight"] = currentWeights[k];
                                                                                 }
                                                                         );
-                                                        
-                                                        //weighted product between weights and future return
                                                         var r = Object
                                                                 .keys(currentWeights)
                                                                 .reduce(
@@ -420,9 +500,7 @@
                                                                                 }
                                                                         ,0
                                                                         );
-                                                        
                                                         rr.STRAT_return = r;
-                                                                        
                                                         return a.concat(rr);
                                                         }
                                                 
@@ -433,7 +511,8 @@
                                                 }
                                         ,[]
                                         )
-                                .printResults(horizon);        
+                                .printResults(horizon); 
+                                */       
                         }
                 
                 //*****************************************************

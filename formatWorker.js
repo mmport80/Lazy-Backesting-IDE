@@ -13,9 +13,8 @@ self.addEventListener(
                 //clean
                 cd = data.cleanData();
                 //format
-                fd = cd.formatData(horizon);
-                
-                self.postMessage([cd,fd.toArray()]);
+                //fd = cd.formatData(horizon);
+                self.postMessage(cd);
                 },
         false
         );
