@@ -1,6 +1,4 @@
-
 <!DOCTYPE html>
-
 <html>
 <!--
     (c)2015 John Orford
@@ -394,11 +392,8 @@
                         cd      .reverse()
                                 .reduce(
                                         function(a,c){
-                                        
                                                 var rr = {};
-                                        
                                                 rr.sofar = a.sofar.concat([c]);
-                                        
                                                 rr.result = a   .result
                                                                 .concat( 
                                                                         [
@@ -409,9 +404,29 @@
                                                                                                 return j.ticker;
                                                                                                 }
                                                                                         )
+                                                                                /*
+                                                                                .map(
+                                                                                        function(i){
+                                                                                                var rrr = {};
+                                                                                                rrr[i[0].ticker] = i; 
+                                                                                                return rrr;       
+                                                                                                }
+                                                                                        )
+                                                                                */
                                                                                 .toArray()
                                                                         ]
-                                                                        );
+                                                                        )
+                                                                .map(
+                                                                        function(i){
+                                                                                return i.reduce(
+                                                                                        function(aa,cc){
+                                                                                                return aa.concat(cc);
+                                                                                                }
+                                                                                        ,[]
+                                                                                        );
+                                                                                }
+                                                                        )
+                                                                ;
                                                 /*
                                                 //throws an error if strategy logic asks for more data than available
                                                 try {
