@@ -404,27 +404,16 @@
                                                                                                 return j.ticker;
                                                                                                 }
                                                                                         )
-                                                                                /*
-                                                                                .map(
-                                                                                        function(i){
-                                                                                                var rrr = {};
-                                                                                                rrr[i[0].ticker] = i; 
-                                                                                                return rrr;       
-                                                                                                }
-                                                                                        )
-                                                                                */
                                                                                 .toArray()
-                                                                        ]
-                                                                        )
-                                                                .map(
-                                                                        function(i){
-                                                                                return i.reduce(
-                                                                                        function(aa,cc){
-                                                                                                return aa.concat(cc);
+                                                                                .reduce(
+                                                                                        function(a,j){
+                                                                                                var rrr = {};
+                                                                                                a[j[0].ticker] = j;
+                                                                                                return a;
                                                                                                 }
                                                                                         ,[]
-                                                                                        );
-                                                                                }
+                                                                                        )
+                                                                        ]
                                                                         )
                                                                 ;
                                                 /*
@@ -481,6 +470,22 @@
                                         //rets so far, summary
                                         , {sofar:[],result:[]}
                                         )
+                                        /*
+                                        .result
+                                        .map(
+                                                function(i){
+                                                        return i.reduce(
+                                                                function(a,j){
+                                                                        var rrr = {};
+                                                                        a[j[0].ticker] = j; 
+                                                                
+                                                                        return a;
+                                                                        }
+                                                                ,[]
+                                                                );
+                                                        }
+                                                )
+                                        */
                                 .print();
                         
                         /*
