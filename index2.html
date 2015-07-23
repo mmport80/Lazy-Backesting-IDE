@@ -19,7 +19,6 @@
     along with Lazy Backtesting.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <head>
-        
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   
@@ -388,8 +387,7 @@
                         //foldr
                         //future is a horizon
                         
-                        
-                        cd      .reverse()
+                        var cd2 = cd.reverse()
                                 .reduce(
                                         function(a,c){
                                                 var rr = {};
@@ -404,18 +402,36 @@
                                                                                                 return j.ticker;
                                                                                                 }
                                                                                         )
-                                                                                .toArray()
-                                                                                .reduce(
-                                                                                        function(a,j){
-                                                                                                var rrr = {};
-                                                                                                a[j[0].ticker] = j;
-                                                                                                return a;
-                                                                                                }
-                                                                                        ,[]
-                                                                                        )
                                                                         ]
                                                                         )
                                                                 ;
+                                                        return rr;
+                                                        }
+                                        //rets so far, summary
+                                        , {sofar:[],result:[]}
+                                        )
+                                        ;          
+                        //cd2.print();
+                        cd2     .result
+                                
+                                .map( 
+                                        function(i){
+                                                //return i.toArray();
+                                                
+                                                return i.reduce(
+                                                        function(a,k){
+                                                                //k.print();
+                                                                a[ k.ticker ] = k;
+                                                                return a;
+                                                                }
+                                                                ,{}
+                                                        );
+                                                
+                                                }
+                                        )
+                                
+                                .print();        
+                        //.map(function(i){return i;})
                                                 /*
                                                 //throws an error if strategy logic asks for more data than available
                                                 try {
@@ -465,11 +481,7 @@
                                                 
                                                 //return strategy return or nothing if not enough data / or exception
                                                 //and return returns so far!
-                                                return rr;
-                                                }
-                                        //rets so far, summary
-                                        , {sofar:[],result:[]}
-                                        )
+                                         
                                         /*
                                         .result
                                         .map(
@@ -486,7 +498,7 @@
                                                         }
                                                 )
                                         */
-                                .print();
+                                
                         
                         /*
                         fd      .reduce(
