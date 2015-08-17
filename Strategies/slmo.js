@@ -5,4 +5,4 @@ var c = jStat.corrcoeff( Lazy(r).initial().toArray(), Lazy(r).rest().toArray() )
 weight.INDEX_GSPC = 0;
 
 //mo
-r[0] > 0 && c > 0? weight.INDEX_GSPC = c : null;
+r[0] > 0 && c > 0 ? weight.INDEX_GSPC = 1 : null;
