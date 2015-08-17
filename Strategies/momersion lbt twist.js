@@ -16,7 +16,4 @@ var Mc = data
 	)
   [1];
 
-Mc/19 > 0.5 ?
-  weight.AMEX_SPY = 1
-  :
-  weight.AMEX_SPY = 0;
+weight.AMEX_SPY = Mc/19;
