@@ -387,7 +387,8 @@
                         //foldr
                         //future is a horizon
                         
-                        var cd2 = cd.reverse()
+                        var cd2 = cd
+                                .reverse()
                                 .reduce(
                                         function(a,c){
                                                 var rr = {};
@@ -410,28 +411,22 @@
                                         //rets so far, summary
                                         , {sofar:[],result:[]}
                                         )
-                                        ;          
-                        //cd2.print();
-                        cd2     .result
-                                
+                                .result
                                 .map( 
                                         function(i){
-                                                //return i.toArray();
-                                                
                                                 return i.reduce(
                                                         function(a,k){
-                                                                //k.print();
-                                                                a[ k.ticker ] = k;
-                                                                return a;
+                                                                var n = k[0].ticker;
+                                                                a[ n ] = k;
+                                                                //return k;
                                                                 }
                                                                 ,{}
                                                         );
-                                                
                                                 }
                                         )
-                                
-                                .print();        
-                        //.map(function(i){return i;})
+                                .print()
+                                ;
+                                                
                                                 /*
                                                 //throws an error if strategy logic asks for more data than available
                                                 try {
