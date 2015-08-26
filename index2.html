@@ -295,16 +295,11 @@
                                         cd = e.data;
                                         
                                         //save down truncated data
-                                        //data = Object.keys(cd).map(function(k){return {ticker:cd[k][0].ticker, prices:cd[k]};});
                                         
                                         "Data cleaned".write("","availableData");
-                                        //fd = Lazy(e.data[1]);
-                                        //"Data formatted".write("","availableData");
                                         }
                                 , false
                                 );
-
-                        
                         }
                     
                 //always running, never terminated
@@ -375,144 +370,154 @@
                                                                 
                 //*****************************************************
                 
-                function backTest(){
+
+                //return strategy return or nothing if not enough data / or exception
+                var backTest2 = function(ccc, horizon){
+                        var c = {};
+                        
+                        var cc = Object
+                                .keys(ccc)
+                                .reduce(
+                                        function(b,k){
+                                                //copy over to new return array
+                                                b[k] = ccc[k].slice(0, ccc[k].length);
+                                                return b;
+                                                }
+                                        ,{}
+                                        );
+                        
+                        
+                        //get date
+                        
+                        var kk = Object.keys(ccc)[0];
+                        
+                        c.date = cc[ kk ][ 0 ].date;
+                        
+                        c.history = Object
+                                .keys(cc)
+                                .reduce(
+                                        function(b,k){
+                                                b[k] = cc[k].slice(horizon, cc[k].length-horizon);
+                                                return b;
+                                                }
+                                        ,{}
+                                        );
+                        
+                        c.future = Object
+                                .keys(cc)
+                                .reduce(
+                                        function(b,k){
+                                                b[k] = cc[k].slice(0,horizon+1).period(horizon).returns();
+                                                return b;
+                                                }
+                                        ,{}
+                                        );
+                        
+                        
+                        var currentWeights = strategyLogic(c.history); 
+                        
+                        
+                        //build new object
+                        var rr = {};
+                        //convert to date readable by spreasheets
+                        rr.date = c.date.getFullYear() + "-" + (c.date.getMonth()+1) + "-" + (c.date.getDate());
+                        
+                        rr = Object
+                                .keys(c.future)
+                                .reduce(
+                                        function(b,k){
+                                                if(c.future[k][0] == undefined){
+                                                        throw "undefined";
+                                                        }
+                                                //return of each input
+                                                b[k+"_return"] = c.future[k][0];
+                                                return b;
+                                                }
+                                        ,rr
+                                        );
+                        //update weights
+                        Object  .keys(currentWeights)
+                                .forEach(
+                                        function(k){
+                                                //weight of each input
+                                                rr[k+"_weight"] = currentWeights[k];
+                                                }
+                                        );
+                        var r = Object
+                                .keys(currentWeights)
+                                .reduce(
+                                        function(aa,k){
+                                                //strat return
+                                                return aa+(currentWeights[k]*c.future[k]);
+                                                }
+                                        ,0
+                                        );
+                                        
+                        rr.STRAT_return = r;
+                        
+                        return rr;
+                        }
                 
+                Object.defineProperty(
+                        Object.prototype, 
+                        'backTest2',
+                        {
+                                value: backTest2,
+                                writable: true,
+                                configurable: true,
+                                enumerable: false
+                                }
+                        );  
+                
+                function backTest(){
                         //cd reduce, and then format on the fly?
                         //no need to have fd at all?   
                         
                         var horizon = +document.getElementById('horizon').value;
                         
-                        //[...,{future:,history:},...]
-                        //build from bottom up
-                        //foldr
-                        //future is a horizon
-                        
-                        cd
-                                .reverse()
+                        cd      //returns array of arrays
                                 .reduce(
                                         function(a,c){
                                                 var rr = {};
+                                                //update so far
                                                 rr.sofar = a.sofar.concat([c]);
-                                                rr.result = a   .result
-                                                                .concat( 
-                                                                        [
-                                                                        Lazy(a.sofar)
-                                                                                .flatten()
-                                                                                .groupBy(
-                                                                                        function(j){
-                                                                                                return j.ticker;
-                                                                                                }
-                                                                                        )
-                                                                        ]
-                                                                        )
-                                                                ;
-                                                        return rr;
+                                                
+                                                var z = Lazy(rr.sofar)
+                                                        .flatten()
+                                                        .groupBy(
+                                                                function(j){
+                                                                        return j.ticker;
+                                                                        }
+                                                                )
+                                                        .reduce(
+                                                                function(a,k){
+                                                                        a[ k[0].ticker ] = k.reverse();
+                                                                        return a;
+                                                                        }
+                                                                ,{}
+                                                                );
+                                                
+                                                try {
+                                                        //update result
+                                                        rr.result = a   .result
+                                                                        .concat( [ backTest2(z, horizon) ] )
+                                                                        ;
                                                         }
+                                                //if not enough data
+                                                catch (err) {
+                                                        //don't update
+                                                        rr.result = a.result;
+                                                        }
+                                                
+                                                
+                                                return rr;
+                                                }
                                         //rets so far, summary
                                         , {sofar:[],result:[]}
                                         )
                                 .result
-                                .map( 
-                                        function(i){
-                                                return i.reduce(
-                                                        function(a,k){
-                                                                a[ k[0].ticker ] = k;
-                                                                return a;
-                                                                }
-                                                        ,{}
-                                                        );
-                                                }
-                                        )
-                                .slice(1)
-                                //return strategy return or nothing if not enough data / or exception
-                                //and return returns so far!
-                                .reduce(
-                                        function(a,ccc){
-                                                //throws an error if strategy logic asks for more data than available
-                                                try {
-                                                        var c = {};
-                                                        
-                                                        var cc = Object
-                                                                .keys(ccc)
-                                                                .reduce(
-                                                                        function(b,k){
-                                                                                b[k] = ccc[k].slice(0, ccc[k].length-1).period(horizon).returns();
-                                                                                return b;
-                                                                                }
-                                                                        ,{}
-                                                                        );
-                                                        
-                                                        var kk = Object.keys(cc)[0];
-                                                        c.date = ccc[ kk ][ ccc[kk].length-1 ].date;
-                                                        
-                                                        c.history = Object
-                                                                .keys(cc)
-                                                                .reduce(
-                                                                        function(b,k){
-                                                                                b[k] = cc[k].slice(0, cc[k].length-1);
-                                                                                return b;
-                                                                                }
-                                                                        ,{}
-                                                                        );
-                                                        
-                                                        c.future = Object
-                                                                .keys(cc)
-                                                                .reduce(
-                                                                        function(b,k){
-                                                                                b[k] = cc[k].slice(cc[k].length-1);
-                                                                                return b;
-                                                                                }
-                                                                        ,{}
-                                                                        );
-                                                        
-                                                        var currentWeights = strategyLogic(c.history); 
-                                                        
-                                                        //build new object
-                                                        var rr = {};
-                                                        rr.date = c.date;
-                                                        
-                                                        rr = Object
-                                                                .keys(c.future)
-                                                                .reduce(
-                                                                        function(b,k){
-                                                                                //return of each input
-                                                                                b[k+"_return"] = c.future[k][0];
-                                                                                return b;
-                                                                                }
-                                                                        ,rr
-                                                                        );
-                                                        //update weights
-                                                        Object  .keys(currentWeights)
-                                                                .forEach(
-                                                                        function(k){
-                                                                                //weight of each input
-                                                                                rr[k+"_weight"] = currentWeights[k];
-                                                                                }
-                                                                        );
-                                                        var r = Object
-                                                                .keys(currentWeights)
-                                                                .reduce(
-                                                                        function(aa,k){
-                                                                                //strat return
-                                                                                return aa+(currentWeights[k]*c.future[k]);
-                                                                                }
-                                                                        ,0
-                                                                        );
-                                                                        
-                                                        rr.STRAT_return = r;
-                                                        
-                                                        return a.concat(rr);
-                                                        }
-                                                //thrown if we ran out of data
-                                                catch(err){
-                                                        return a;
-                                                        }
-                                                }
-                                        ,[]
-                                        )
+                                .reverse()
                                 //split out into 'bumped' scenarios
-                                /*
-                                
                                 .reduce(
                                         function(p,c,i){
                                                 if (p[i%horizon] === undefined) {
@@ -525,31 +530,31 @@
                                                 }
                                         ,[]
                                         )
-                                //find set with lowest Sharpe
-                                
+                                //return lowest sharpe
                                 .reduce(
-                                        function(p,c){
-                                                ( jStat.mean(c) / jStat.stdev(c,true) ) < ( jStat.mean(p) / jStat.stdev(p,true) ) ?
-                                                        p = c
-                                                        :
-                                                        null;
-                                                return p;
+                                        function(a,c){
+                                                var aa = Lazy(a).pluck('STRAT_return').toArray();
+                                                var cc = Lazy(c).pluck('STRAT_return').toArray();
+                                                //find & return smallest sharpe
+                                                if ( ( jStat.mean(aa) / jStat.stdev(aa,true) ) > ( jStat.mean(cc) / jStat.stdev(cc,true) ) ) {
+                                                        a = c;
+                                                        }
+                                                return a;
                                                 }
                                         )
-                                */
+                                
                                 .printResults(horizon); 
+                                
                         }
                 
                 //*****************************************************
                 
                 Array.prototype.printResults = function(horizon){
-                        this.print();
-                        
                         //can change between data generation and call
                         "**********************************************************************".print();
                         var inCSVFormat = 
                                 d3.csv.formatRows(
-                                        this.reduce(
+                                        this    .reduce(
                                                         function(a,c){
                                                                 //return values of object
                                                                 //converting into array
