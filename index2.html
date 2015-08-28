@@ -592,7 +592,7 @@
                         var sd = (jStat.stdev(stratRets,true)*Math.sqrt(period));
                         sd.toLocaleString().print();
 
-                        "Sharpe:".print();
+                        "Big 'O' Sharpe:".print();
                         var sharpe = av/sd;
                         sharpe.toLocaleString().print();
 
@@ -705,7 +705,7 @@
                         tot.toLocaleString().write("Total Return:");
                         av.toLocaleString().write("Average Return:");
                         sd.toLocaleString().write("Std Dev:");
-                        sharpe.toLocaleString().write("Sharpe:");
+                        sharpe.toLocaleString().write("Big 'O' Sharpe:");
                         //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
                         skew.toLocaleString().write("Skew:")
                         stratRets.length.toLocaleString().write("Sample Size:");

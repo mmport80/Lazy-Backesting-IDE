@@ -4,6 +4,9 @@ importScripts('lib/dataHelpers.js');
 importScripts('lib/networking2.js');
 importScripts('lib/utility.js');
 
+
+
+
 //*****************************************************
 
 self.addEventListener(
@@ -28,7 +31,10 @@ self.addEventListener(
                                                 r = {ticker: d.ticker, date: new Date(i[0]), datum:i[1]};
                                         return r;
                                         }
-                                );
+                                )
+                        ;
+                        
+                //console.log(prices);
                 
                 self.postMessage({ticker:d.ticker,prices:prices,horizon:d.horizon});
                 },
