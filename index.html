@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html>
+<!--
+    (c)2015 John Orford
+    
+    This file is part of Lazy Backtesting.
+
+    Lazy Backtesting is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Lazy Backtesting is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with Lazy Backtesting.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  
+        <title>Lazy Backtest IDE</title>
+        
+        <script type="text/javascript" src="lib/lazy.js"></script>
+        <script type="text/javascript" src="lib/jstat.min.js"></script>
+        <script type="text/javascript" src="lib/d3.min.js"></script>
+        <script type="text/javascript" charset="utf-8" src="lib/numeric-1.2.6.min.js"></script>
+        <script type="text/javascript" src="lib/lodash.min.js"></script>
+       
+        <script src="lib/codemirror.js"></script>
+        <link rel="stylesheet" href="lib/codemirror.css">
+        <script src="lib/javascript.js"></script>
+        
+        <script type="text/javascript" src="lib/networking2.js"></script>
+        <script type="text/javascript" src="lib/utility.js"></script>
+        <script type="text/javascript" src="lib/strategyHelpers.js"></script>
+        <script type="text/javascript" src="lib/dataHelpers.js"></script>
+        <script type="text/javascript" src="lib/graphs.js"></script>
+        <!--
+                <script type="text/javascript" src="lib/graphObject.js"></script>
+       -->
+        <style>
+                #title{font-size:6em}
+                #downloadResults{display:none;}
+                #tip{display:none;}
+                
+
+                .axis path,
+                .axis line {
+                        fill: none;
+                        stroke: #000;
+                        shape-rendering: crispEdges;
+                        }
+
+                .x.axis path {
+                        display: none;
+                        }
+
+                .y.axis path {
+                        display: none;
+                        }
+
+                .overlay {
+                        fill: none;
+                        pointer-events: all;
+                        }
+
+                .line {
+                        fill: none;
+                        stroke-width: 0.1em;
+                        }
+
+                .dateLine {
+                        fill: black;
+                        stroke: black;
+                        stroke-width: 0.5;
+                        }
+
+                .focus rect {
+                        fill: white;
+                        fill-opacity: 0.75;
+                        stroke:white;
+                        stroke-opacity: 1;
+                        }
+                
+        </style>
+        
+</head>
+
+<body>
+        <iframe name="my_iframe" src="about:blank" style="display:none;"></iframe>
+
+        <form autocomplete="on" target="my_iframe" action="about:blank" method='get'>
+
+                <button id="submitButton" type="submit" style="display:none;"></button>
+
+                <div id="title">Lazy Backtest IDE</div>
+
+                <hr />  
+                <p>1) Set the strategy's holding period</p>
+                
+                <div>   
+                        <select id='horizon'>
+                                <option value='1'>Daily</option>
+                                <option value='5'>Weekly</option>
+                                <option value='21' selected="selected">Monthly</option>
+                                <option value='63'>Quarterly</option>
+                        </select>
+                </div>
+
+                <hr />
+                
+                <p>2) Pull required data down from <a href='https://www.quandl.com/'>Quandl</a> by specifying sources and tickers</p>
+
+                <!--
+                <div>
+                        <select id='source2' autocomplete="on">
+                                <option value='GOOG'>Google</option>
+                                <option value='YAHOO'>Yahoo</option>
+                                <option value='SPDJ'>S&amp;P Dow Jones</option>
+                                <option value='CBOE' selected="selected">Chicago Board of Options Exchange</option>
+                        </select>
+                        <input type="text" id='ticker2' value='SKEW'/>
+                        Yield
+                        <input type="checkbox" id="yield2" value="true" autocomplete="on"/>
+                        <a href='javascript:void(0)' id='addAsset2'>ADD</a>
+                </div>
+                -->
+                <div>
+                        <select id='source1' autocomplete="on">
+                                <option value='GOOG' selected="selected">Google</option>
+                                <option value='YAHOO'>Yahoo</option>
+
+                                <option value='SPDJ'>S&amp;P Dow Jones</option>
+                                <option value='CBOE'>Chicago Board of Options Exchange</option>
+                        </select>
+                        <input type="text" id='ticker1' value='AMEX_SPY' value="true" autocomplete="on"/>
+                        Yield
+                        <input type="checkbox" id="yield1" autocomplete="on"/>
+                        <a href='javascript:void(0)' id='addAsset1'>ADD</a>
+                </div>
+                
+                <div>
+                        <select id='source3' autocomplete="on">
+                                <option value='GOOG'>Google</option>
+                                <option value='YAHOO' selected="selected">Yahoo</option>
+                                <option value='SPDJ'>S&amp;P Dow Jones</option>
+                                <option value='CBOE'>Chicago Board of Options Exchange</option>
+                        </select>
+                        <input type="text" id='ticker3' value='INDEX_IRX' value="true" autocomplete="on"/>
+                        Yield
+                        <input type="checkbox" id="yield3" autocomplete="on" checked />
+                        <a href='javascript:void(0)' id='addAsset3'>ADD</a>
+                </div>
+                
+                <hr />  
+                
+                <div id="availableData"></div>
+                
+                        
+
+                <hr />
+                
+                <p>3) Code your strategy in the browser</p>
+
+                <div id="code"></div>
+                
+                <hr /> 
+                
+                <p>4) Hit the back test link</p>
+                
+                <p><a href='javascript:void(0)' id="backTest">Back Test</a></p>
+                
+                
+                <div id="messages"></div>
+                
+                
+                
+                
+                <a id='downloadResults'>Download CSV file</a>
+                
+                <div id='tip'>
+
+                        <p >(Results are <a href='http://blog.johnorford.com/2015/06/22/big-oh/' target='_blank'>"Big O"</a>, i.e. conservative)</p>
+                </div>
+                
+                <hr />
+                
+                <p>Sharpe Trajectories</p>
+                
+                <!--
+                        <input type="text" id='codex' autocomplete="on"/>
+                -->
+                        
+                <div id='graph'></div>
+                <!--
+                IRX
+                <input type="checkbox" id="1" autocomplete="on" checked />
+                GSPC
+                <input type="checkbox" id="1" autocomplete="on" checked />
+                SKEW
+                <input type="checkbox" id="1" autocomplete="on" checked />
+                -->
+                        <p id='xoxo'></p>
+                        
+                <hr />
+
+                <p>Optional: input a Quandl key for unlimited free data</p>
+                <div>                
+                        <input type="password" id='key' autocomplete="on"/>
+                </div>
+                
+                <hr />
+
+                <p><a href='http://blog.johnorford.com/2015/04/29/lazy-backtesting-update/'>API Details</a></p>
+
+                <p>Need help? Watch the screencast:</p>
+                
+                <iframe width="960" height="720" src="https://www.youtube-nocookie.com/embed/dWYPNS_mc6U?rel=0" frameborder="0" allowfullscreen></iframe>
+                
+        </form>
+</body>
+
+        <script>
+                "use strict"
+        
+                //*****************************************************
+                //globals        
+                
+                var data = [];
+                var cd = null;
+                
+                //*****************************************************
+                //set listeners
+                
+                document.getElementById('addAsset1')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(1);}
+                                );
+                /*
+                document.getElementById('addAsset2')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(2);}
+                                );
+                */
+                document.getElementById('addAsset3')
+                        .addEventListener(
+                                "click", 
+                                function(){addAsset(3);}
+                                );
+                
+                document.getElementById('backTest')
+                        .addEventListener(
+                                "click", 
+                                function(){setBackTestListener();}
+                                );
+                
+                //*****************************************************
+                function setBackTestListener(){
+                        var code = editor.getValue();
+                        var js = 
+                                //setup strategyLogic function
+                                "var strategyLogic = function(data, history){var weight = new Object();\n"+
+                                code+"\n"+
+                                "return weight;}\n"+
+                                //kick off backtest
+                                "backTest();\n";
+                        var s = document.createElement('script');
+                        s.textContent = js;
+                        document.body.appendChild(s);
+                        }
+                
+                //*****************************************************
+                
+                document.getElementById('horizon')
+                        .addEventListener(
+                                "change", 
+                                //format data if clean data is available
+                                function(){
+                                        var horizon = +document.getElementById('horizon').value;
+                                        }
+                                );
+        
+                //*****************************************************
+                //for some reason I can't put this in a seperate 'utility.js' file...
+                   
+                Object.defineProperty(
+                        Object.prototype, 
+                        'print',
+                        {
+                                value: function(){ return console.log(this); },
+                                writable: true,
+                                configurable: true,
+                                enumerable: false
+                                }
+                        );
+        
+                //*****************************************************
+                //Code Mirror
+                
+                var editor = CodeMirror(
+                        document.getElementById("code"), 
+                        {
+                        value:
+                          
+                        "//The 'data' object stores all the inputs needed to allocate assets.\n"+
+                        "//data.AMEX_SPY is a S&P 500 index ETF time series.\n\n"+
+
+                        "//This strategy increases exposure when volatility is low,\n"+
+                        "//and decreases it when volatility is high.\n"+
+                        "var rs = data.AMEX_SPY.daily().lookback(21).returns();\n\n"+
+                        "var vol = jStat(rs).stdev(true);\n\n"+
+
+                        "//Ensure average weight is ~1\n"+
+                        "var avVol = 0.0080444403;\n\n"+
+
+                        "//Set weighting for upcoming period\n"+
+                        "weight.AMEX_SPY = avVol/vol;\n\n"+
+
+                        "//13 week t-bill yield index (via Yahoo) used to calculate Sharpe ratio.\n"+
+                        "//Scaled for a monthly horizon\n"+
+                        "weight.INDEX_IRX = -weight.AMEX_SPY*(4/13);"
+                        ,
+                          mode: "javascript",
+                          lineNumbers: true
+                        }
+                        );
+                
+                //*****************************************************
+                    
+                var formatCleanWorker = null;
+                
+                function setUpformatCleanWorker(){
+                        formatCleanWorker != null ? formatCleanWorker.terminate() : null;
+                        
+                        //one worker pulls in data & adds to prev data
+                        //one worker cleans & formats
+                        //one worker formats
+                        //one worker backtests
+                        
+                        //horizon maps cleansed to formatted data
+                        //data 'pulls' -> pulls, adds to global, cleans & formats 
+                        //backtest just backtests
+                        
+                        //any thread can be terminated apart from pulling data in
+                        //if a new formatting job comes along it prob has up-to-date info
+                        //so kill the old one and run the up-to-date version
+                        
+                        formatCleanWorker = new Worker('formatWorker.js');
+                        formatCleanWorker.addEventListener(
+                                'message', 
+                                function(e) {
+                                        //save down global data once available
+                                        cd = e.data;
+                                        
+                                        //save down truncated data
+                                        
+                                        "Data cleaned".write("","availableData");
+                                        }
+                                , false
+                                );
+                        }
+                    
+                //always running, never terminated
+                //multiple adds queue up behind each other
+                var addMarketDataWorker = new Worker('addMarketDataWorker.js');
+                      
+                //after
+                addMarketDataWorker.addEventListener(
+                        'message', 
+                        function(e) {
+                                //send data back to parent thread
+                                "OK".write("Status:","availableData");
+                                
+                                var d = e.data;
+                                
+                                //global raw data saved down
+                                data = data.concat({ticker: d.ticker, prices: d.prices});
+
+                                setUpformatCleanWorker();
+
+                                //send worker data
+                                formatCleanWorker.postMessage([data,d.horizon]);
+                                }
+                        , false
+                        );
+                         
+                //*****************************************************
+                //add assets
+                //call for data
+                function addAsset(no){
+                        var tickers = document.getElementById('ticker'+no).value.split(',');
+                        
+                        //look for commas
+                        //turn into array
+                        //step thru array
+                        
+                        var y = document.getElementById('yield'+no).checked;
+                        var horizon = document.getElementById('horizon').value;
+                        var source = document.getElementById('source'+no).value;
+                        
+                        var key = document.getElementById('key').value;
+                        key = 'Fp6cFhibc5xvL2pN3dnu';
+                        
+                        //if multiple tickers input
+                        tickers.forEach(
+                                function(ticker){
+                                        //Doesn't already exist?
+                                        if (data.filter(
+                                                function(i){
+                                                        return i.ticker === ticker;
+                                                        }
+                                                )
+                                                .length === 0
+                                                ) {                                                                
+                                                ticker.write("Requesting prices for:","availableData");
+                
+                                                //send above vars to worker
+                                                addMarketDataWorker.postMessage(
+                                                        {ticker:ticker,y:y,horizon:horizon,key:key,source:source}
+                                                        );
+                                                }
+                                        else    {
+                                                "".write("Ticker already added","availableData");
+                                                }
+                                        }
+                                )
+                        };
+                
+                //*****************************************************
+                //only run after add asset - horizon doesn't affect this
+                //remove mismatching dates
+                //return checking (i.e. that returns encompass the required horizon) should be done later
+                //parallelable?
+                //if run in asynced process as a whole job (not chunks) kill once newer cleandata has been kicked off... only one should run at any time.
+                                                                
+                //*****************************************************
+                        
+                //return strategy return or nothing if not enough data / or exception
+                var getStratReturn = function(data, horizon, resultSoFar){
+                        //new object to be built
+                        var c = {};
+                        
+                        //get date
+                        var kk = Object.keys(data)[0];
+                        
+                        //'current' date
+                        c.date = data[ kk ][ 0 ].date;
+                        
+                        //''history to feed backtester
+                        c.history = Object
+                                .keys(data)
+                                .reduce(
+                                        function(b,k){
+                                                b[k] = data[k].slice(horizon, data[k].length-horizon);
+                                                return b;
+                                                }
+                                        ,{}
+                                        );
+                        
+                        //return to generate return to add to total pl
+                        c.future = Object
+                                .keys(data)
+                                .reduce(
+                                        function(b,k){
+                                                b[k] = data[k].slice(0,horizon+1).period(horizon).returns();
+                                                return b;
+                                                }
+                                        ,{}
+                                        );
+                        
+                        
+                        if (resultSoFar.length>0){
+                                var resultKeys = Object.keys(resultSoFar[0]);
+                                var zz = resultKeys
+                                        .reduce(
+                                                function(a,k){
+                                                        a[k] = Lazy(resultSoFar.reverse()).pluck(k).toArray();
+                                                        return a;
+                                                        }
+                                                , {}
+                                                );
+                                }
+                        else{
+                                var zz = {}
+                                }
+                        
+                        var currentWeights = strategyLogic(c.history, zz); 
+                        
+                        //build new object
+                        var rr = {};
+                        //convert to date readable by spreasheets
+                        rr.date = c.date.getFullYear() + "-" + (c.date.getMonth()+1) + "-" + (c.date.getDate());
+                        
+                        rr = Object
+                                .keys(c.future)
+                                .reduce(
+                                        function(b,k){
+                                                if(c.future[k][0] == undefined){
+                                                        throw "undefined";
+                                                        }
+                                                //return of each input
+                                                b[k+"_return"] = c.future[k][0];
+                                                return b;
+                                                }
+                                        ,rr
+                                        );
+                        //update weights
+                        Object  .keys(currentWeights)
+                                .forEach(
+                                        function(k){
+                                                //weight of each input
+                                                rr[k+"_weight"] = currentWeights[k];
+                                                }
+                                        );
+                        
+                        //get strat ret
+                        rr.STRATEGY_return = Object
+                                .keys(currentWeights)
+                                .reduce(
+                                        function(aa,k){
+                                                //strat return
+                                                return aa+(currentWeights[k]*c.future[k]);
+                                                }
+                                        ,0
+                                        );
+                        
+                        return rr;
+                        }
+                
+                Object.defineProperty(
+                        Object.prototype, 
+                        'getStratReturn',
+                        {
+                                value: getStratReturn,
+                                writable: true,
+                                configurable: true,
+                                enumerable: false
+                                }
+                        );  
+                
+                
+                function backTest(){
+                        var horizon = +document.getElementById('horizon').value;
+
+                        //calc strat rets
+                        //returns array of arrays
+                        cd      .reduce(
+                                        function(a,c){
+                                                var rr = {};
+                                                
+                                                //update so far
+                                                rr.sofar = a.sofar.concat([c]);
+                                                
+                                                var z = Lazy(rr.sofar)
+                                                        .flatten()
+                                                        .groupBy(
+                                                                function(j){
+                                                                        return j.ticker;
+                                                                        }
+                                                                )
+                                                        .reduce(
+                                                                function(a,k){
+                                                                        a[ k[0].ticker ] = k.reverse();
+                                                                        return a;
+                                                                        }
+                                                                ,{}
+                                                                );
+                                                                
+                                                try {
+                                                        //update result
+                                                        rr.result = a   .result
+                                                                        .concat( 
+                                                                                [ getStratReturn(z, horizon, a.result.slice() ) ]
+                                                                                )
+                                                                        ;
+                                                        }
+                                                        
+                                                //if not enough data
+                                                catch (err) {
+                                                        //don't update
+                                                        rr.result = a.result;
+                                                        }
+                                                
+                                                return rr;
+                                                }
+                                        //rets so far, summary
+                                        , {sofar:[],result:[]}
+                                        )
+                                .result
+                                .reverse()
+                                //split out into 'bumped' scenarios
+                                .reduce(
+                                        function(p,c,i){
+                                                if (p[i%horizon] === undefined) {
+                                                        p[i%horizon] = [c];
+                                                        }
+                                                else {
+                                                        p[i%horizon].push(c);
+                                                        }
+                                                return p;
+                                                }
+                                        ,[]
+                                        )
+                                //return lowest sharpe
+                                .reduce(
+                                        function(a,c){
+                                                var aa = Lazy(a).pluck('STRATEGY_return').toArray();
+                                                var cc = Lazy(c).pluck('STRATEGY_return').toArray();
+                                                //find & return smallest sharpe
+                                                if ( ( jStat.mean(aa) / jStat.stdev(aa,true) ) > ( jStat.mean(cc) / jStat.stdev(cc,true) ) ) {
+                                                        a = c;
+                                                        }
+                                                return a;
+                                                }
+                                        )
+                                .printResults(horizon); 
+                                
+                                
+                        }
+                
+                //*****************************************************
+                
+                
+                Array.prototype.printResults = function(horizon){
+                        var keys = Object.keys(this[0]);
+                        
+                        
+                        
+                        //*************************************************************************************
+                        //*************************************************************************************
+                        
+                        //prepare csv
+                        var csvFormat = this
+                                .reduce(
+                                        function(a,c){
+                                                //return values of object
+                                                //converting into array
+                                                //keys are top and column headers
+                                                return a.concat( [ Lazy(c).values().toArray() ] );
+                                                }
+                                        , [ keys ]
+                                        );
+                        
+                        "**********************************************************************".print();
+                        var inCSVFormat = d3.csv.formatRows( csvFormat );
+                        
+                        //append link
+                        document.getElementById('downloadResults').href = "data:text/csv;charset=utf-8," + escape(inCSVFormat); 
+                        document.getElementById('downloadResults').style.display = 'block';
+                        document.getElementById('tip').style.display = 'block';
+                        
+                        
+                        
+                        //*************************************************************************************
+                        
+                        var dd ='function appendCheckBox(t,e){var n=document.createElement("p"),a=document.createTextNode(t);document.getElementById("graph").appendChild(n);var r=document.createElement("input");r.type="checkbox",r.addEventListener("change",function(){var n=graphTimeSeries.indexOf(t);-1===n?graphTimeSeries.push(t):graphTimeSeries.splice(n,1),update(e.slice())}),r.checked="STRATEGY_return"===t?!0:!1,n.appendChild(r),n.appendChild(a)}function update(t){var e=t.filter(function(t){return-1!=graphTimeSeries.indexOf(t.name)});x.domain(d3.extent(e[0].values,function(t){return t.date})),y.domain([d3.min(e,function(t){return d3.min(t.values,function(t){return t.r})}),d3.max(e,function(t){return d3.max(t.values,function(t){return t.r})})]);var n=d3.svg.axis().scale(x).orient("bottom").ticks(2),a=d3.svg.axis().scale(y).orient("left").ticks(2);d3.select(".x.axis").transition().duration(750).call(n),d3.select(".y.axis").transition().duration(750).call(a),d3.select("#base").selectAll(".returnPath").remove(),d3.select("#base").selectAll(".returnPath").data(e).enter().append("g").attr("class","returnPath").attr("id",function(t){return t.name}).append("path").attr("class","line").style("stroke",function(t){return color(t.name)}).attr("d",function(t){return line(t.values)}).transition().duration(750)}function draw(t){function e(){var t=x.invert(d3.mouse(this)[0]);l.forEach(function(e){var n=o(e.values,t),a=e.values[n];u[e.name].attr("transform","translate("+x(a.date)+","+y(a.r)+")");var r=e.name.substring(0,e.name.length-7),i=r.indexOf("_");-1===i?null:r=r.substring(i+1),u[e.name].select("text").text(r+": "+(100*a.r).toLocaleString()+"%").style("stroke",color(e.name))}),p.attr("transform","translate("+x(t)+",0)"),d.attr("transform","translate("+x(t)+",0)").select("text").text(t.toLocaleDateString())}var n=d3.svg.axis().scale(x).orient("bottom").ticks(2),a=d3.svg.axis().scale(y).orient("left").ticks(2),r=d3.time.format("%Y-%m-%d").parse,i=function(t){return(100*t).toLocaleString()+"%"},o=d3.bisector(function(t){return t.date}).left;d3.select("svg").remove();var s=d3.select("#graph").append("svg").attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom).append("g").attr("transform","translate("+margin.left+","+margin.top+")");s.append("g").attr("id","base"),color.domain(d3.keys(t[0]).filter(function(t){return"date"!=t&&-1===t.indexOf("weight")})),t.forEach(function(t){t.date=r(t.date)});{var l=color.domain().reduce(function(e,n){var a=jStat(_.pluck(t,n).map(function(t){return+t})).mean(),r=null,i=null;r=e.length>0?a/e[0].av:1,i=e.length>0?e[0].av:a;var o=t.slice();return e.concat({name:n,av:a,values:o.reverse().reduce(function(t,e){var a=null;return a=t.length>0?+e[n]/r+t[t.length-1].r-i:+e[n]/r-i,t.concat({date:e.date,r:a})},[])})},[]);l.filter(function(t){return-1!=graphTimeSeries.indexOf(t.name)})}s.append("g").attr("class","x axis").attr("transform","translate(0,"+height+")").call(n),s.append("g").attr("class","y axis").call(a.tickFormat(i)).append("text").attr("transform","rotate(-90)").attr("y",6).attr("dy","1em").style("text-anchor","end").text("Cumulative Demeaned"),update(l.slice()),color.domain().reverse().forEach(function(t){appendCheckBox(t,l.slice())});var d=s.append("g").attr("class","focus").style("display","none");d.append("rect").attr("width","15em").attr("height","1.1em"),d.append("text").attr("x",9).attr("dy","1em");var c=s.append("g").attr("class","toolTips"),u=color.domain().reduce(function(t,e){return t[e]=c.append("g").attr("class","focus "+e).style("display","none"),t[e].append("rect").attr("width","15em").attr("height","1.1em"),t[e].append("text").attr("x",9).attr("dy","1em"),t},[]),p=s.append("g").attr("class","dateLine").style("display","none");p.append("line").attr("x1",0).attr("y1",0).attr("x2",0).attr("y2",height);var m=s.append("rect").attr("class","overlay");m.attr("width",width).attr("height",height),m.on("mouseover",function(){l.forEach(function(t){u[t.name].style("display","none")}),graphTimeSeries.forEach(function(t){u[t].style("display",null)}),d.style("display",null),p.style("display",null)}).on("mousemove",e)}var graphTimeSeries=["STRATEGY_return"],margin={bottom:.05*window.innerHeight,top:.05*window.innerHeight,right:.05*window.innerWidth,left:.05*window.innerWidth},width=window.innerWidth-margin.left-margin.right,height=window.innerHeight-margin.top-margin.bottom,x=d3.time.scale().range([0,width]),y=d3.scale.linear().range([height,0]),color=d3.scale.category10(),line=d3.svg.line().interpolate("basis").x(function(t){return x(t.date)}).y(function(t){return y(t.r)});';
+                        //convert to this to json
+                        //(dd + "var data = "+JSON.stringify(this)+";draw(data);").print();
+                        //document.getElementById('codex').value = (dd + ";var data = "+JSON.stringify(this)+";draw(data);");
+                        //document.write(strg);
+                        
+                        document.getElementById('xoxo').innerHTML = JSON.stringify(this);
+                        
+                        
+                        
+                        //minimise code
+                        //merge into string with code
+                        //put code in box on site
+                        
+                        //*************************************************************************************
+                        
+                        
+                        //draw graph
+                        draw(this);
+                        //var xo = new Graph(this);
+                        
+                        //*************************************************************************************
+                        //*************************************************************************************
+                        //get returns
+                        var stratRets = 
+                                this.map(
+                                        function(i){
+                                                return i.STRATEGY_return;
+                                                }
+                                        );
+                        
+                        //annualise
+                        var period = 252/horizon;
+                        
+                        //analytics
+                        var tot = stratRets.reduce(function(acc,cur){return acc + cur;},0);
+                        var av = (period*tot/stratRets.length);
+                        var sd = (jStat.stdev(stratRets,true)*Math.sqrt(period));
+                        var sharpe = av/sd;
+                        var skew = jStat.skewness(stratRets);
+                        
+                        //years to profitability - max wait
+                        //chunk returns by 1, 2, 3, etc years
+                        //return no of years where all returns are positive
+                        var years = Math.floor(stratRets.length/period)+1;
+                        
+                        var rr = Lazy    .range(1,years)
+                                .map(
+                                        function(i){
+                                                //number of chunks
+                                                var chunks = Math.floor(stratRets.length/(i*period));
+                                                
+                                                var chunkSize = i * period;
+                                                
+                                                //rets wo any leftovers
+                                                var stratRets2 = Lazy(stratRets).take(chunks*chunkSize);
+                                                
+                                                var r = stratRets2
+                                                        .chunk(chunkSize)
+                                                        .map(
+                                                                function(j){
+                                                                        return j
+                                                                                .reduce(
+                                                                                        function(a,c){
+                                                                                                return a+c;
+                                                                                                }
+                                                                                        ,0);
+                                                                        }
+                                                                )
+                                                        //reduce to number of profitable and not periods
+                                                        //expected is 50/50
+                                                        //100 is maximum
+                                                        .toArray();
+                                                
+                                                return r;
+                                                }
+                                        )
+                                .reduce(
+                                        function(a,i){
+                                                var l = i
+                                                        .filter(
+                                                                function(j){
+                                                                        return j>0;
+                                                                        }
+                                                                )
+                                                        .length;
+                                                
+                                                if (a[a.length-1].years === 0){
+                                                        return [{profitPercent:l/i.length,years:a[a.length-1].years+1}];
+                                                        }
+                                                else {
+                                                        return a.concat({profitPercent:l/i.length,years:a[a.length-1].years+1});
+                                                        }
+                                        
+                                                }
+                                        ,[{profitPercent:null,years:0}]
+                                        )
+                                ;
+                          
+                        //expected years to profitability
+                        var expectedWait = Lazy(rr).find(function(i){return i.profitPercent > 0.5});
+                        expectedWait === undefined ? expectedWait = "N/A" : expectedWait = expectedWait.years ;
+                        
+                        //max years to profitability
+                        var maxWait = Lazy(rr).find(function(i){return i.profitPercent === 1});
+                        maxWait === undefined ? maxWait = "N/A" : maxWait = maxWait.years ;
+                        
+                        
+                        
+                        
+                        //*************************************************************************************
+                        //*************************************************************************************
+                        //console print
+                        "Total Return:".print();
+                        tot.toLocaleString().print();
+                        "Average:".print();
+                        av.toLocaleString().print();
+                        "SD:".print();
+                        sd.toLocaleString().print();
+                        "Big 'O' Sharpe:".print();
+                        sharpe.toLocaleString().print();
+                        "Median:".print();
+                        (jStat.median(stratRets)*period).toLocaleString().print();
+                        "MAD:".print();
+                        (jStat.meddev(stratRets)*Math.sqrt(period)).toLocaleString().print();
+                        "Skew:".print();
+                        skew.toLocaleString().print()
+                        "Sample Size:".print();
+                        stratRets.length.toLocaleString().print();
+                        "Max".print();
+                        maxWait.print();
+                        "Years to Profitability".print();  
+                        "Expected".print();
+                        expectedWait.print();
+                        
+                        //standardised 10 year sharpe
+                        /*
+                        var probLoss = 1-jStat.studentt.cdf(sharpe*Math.pow(years,0.5),years - 1);
+                        "Yearly Loss Probability".print();
+                        probLoss.toLocaleString().print();
+                        
+                        var std10YrSharpe = jStat.studentt.inv(1-probLoss,9)/Math.sqrt(10);
+                        "Standardised Sharpe (10 year backtest history)".print();
+                        std10YrSharpe.toLocaleString().print();
+                        */
+                        
+                        
+                        
+                        //*************************************************************************************
+                        //*************************************************************************************
+                        //remove pre-existing nodes
+                        var node = document.getElementById("messages");
+                        while (node.hasChildNodes()) {
+                                node.removeChild(node.lastChild);
+                                }
+                        
+                        
+                        
+                        //*************************************************************************************
+                        //*************************************************************************************
+                        //print to page
+                                
+                        av.toLocaleString().write("Average Return:");
+                        sd.toLocaleString().write("Std Dev:");
+                        sharpe.toLocaleString().write("Sharpe:");
+                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
+                        skew.toLocaleString().write("Skew:");
+                        
+                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
+                        (maxWait+" Yrs").write("Profitability Max Wait:"); 
+                        
+                        this[this.length-1].date.toLocaleDateString().write("From:");
+                        this[0].date.toLocaleDateString().write("To:");  
+                        
+                }
+                
+        </script>
+</html>
