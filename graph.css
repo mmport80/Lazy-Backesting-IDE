@@ -1,0 +1,31 @@
+.axis path,
+.axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+        }
+.x.axis path {
+        display: none;
+        }
+.y.axis path {
+        display: none;
+        }
+.overlay {
+        fill: none;
+        pointer-events: all;
+        }
+.line {
+        fill: none;
+        stroke-width: 0.1em;
+        }
+.dateLine {
+        fill: black;
+        stroke: black;
+        stroke-width: 0.5;
+        }
+.focus rect {
+        fill: white;
+        fill-opacity: 0.75;
+        stroke:white;
+        stroke-opacity: 1;
+        }
