@@ -665,7 +665,7 @@
                         //document.getElementById('codex').value = (dd + ";var data = "+JSON.stringify(this)+";draw(data);");
                         //document.write(strg);
                         
-                        document.getElementById('xoxo').innerHTML = JSON.stringify(this);
+                        //document.getElementById('xoxo').innerHTML = JSON.stringify(this);
                         
                         
                         
@@ -677,7 +677,11 @@
                         
                         
                         //draw graph
-                        draw(this);
+                        //draw(this);
+                        var d = new Graph();
+                        
+                        d.draw(this);
+                        
                         //var xo = new Graph(this);
                         
                         //*************************************************************************************
