@@ -191,9 +191,9 @@
                 
                 <p>Sharpe Trajectories</p>
                 
-                <!--
-                        <input type="text" id='codex' autocomplete="on"/>
-                -->
+                
+                <input type="text" id='codex' autocomplete="on"/>
+        
                         
                 <div id='graph'></div>
                 <!--
@@ -659,15 +659,6 @@
                         
                         //*************************************************************************************
                         
-                        var dd ='function appendCheckBox(t,e){var n=document.createElement("p"),a=document.createTextNode(t);document.getElementById("graph").appendChild(n);var r=document.createElement("input");r.type="checkbox",r.addEventListener("change",function(){var n=graphTimeSeries.indexOf(t);-1===n?graphTimeSeries.push(t):graphTimeSeries.splice(n,1),update(e.slice())}),r.checked="STRATEGY_return"===t?!0:!1,n.appendChild(r),n.appendChild(a)}function update(t){var e=t.filter(function(t){return-1!=graphTimeSeries.indexOf(t.name)});x.domain(d3.extent(e[0].values,function(t){return t.date})),y.domain([d3.min(e,function(t){return d3.min(t.values,function(t){return t.r})}),d3.max(e,function(t){return d3.max(t.values,function(t){return t.r})})]);var n=d3.svg.axis().scale(x).orient("bottom").ticks(2),a=d3.svg.axis().scale(y).orient("left").ticks(2);d3.select(".x.axis").transition().duration(750).call(n),d3.select(".y.axis").transition().duration(750).call(a),d3.select("#base").selectAll(".returnPath").remove(),d3.select("#base").selectAll(".returnPath").data(e).enter().append("g").attr("class","returnPath").attr("id",function(t){return t.name}).append("path").attr("class","line").style("stroke",function(t){return color(t.name)}).attr("d",function(t){return line(t.values)}).transition().duration(750)}function draw(t){function e(){var t=x.invert(d3.mouse(this)[0]);l.forEach(function(e){var n=o(e.values,t),a=e.values[n];u[e.name].attr("transform","translate("+x(a.date)+","+y(a.r)+")");var r=e.name.substring(0,e.name.length-7),i=r.indexOf("_");-1===i?null:r=r.substring(i+1),u[e.name].select("text").text(r+": "+(100*a.r).toLocaleString()+"%").style("stroke",color(e.name))}),p.attr("transform","translate("+x(t)+",0)"),d.attr("transform","translate("+x(t)+",0)").select("text").text(t.toLocaleDateString())}var n=d3.svg.axis().scale(x).orient("bottom").ticks(2),a=d3.svg.axis().scale(y).orient("left").ticks(2),r=d3.time.format("%Y-%m-%d").parse,i=function(t){return(100*t).toLocaleString()+"%"},o=d3.bisector(function(t){return t.date}).left;d3.select("svg").remove();var s=d3.select("#graph").append("svg").attr("width",width+margin.left+margin.right).attr("height",height+margin.top+margin.bottom).append("g").attr("transform","translate("+margin.left+","+margin.top+")");s.append("g").attr("id","base"),color.domain(d3.keys(t[0]).filter(function(t){return"date"!=t&&-1===t.indexOf("weight")})),t.forEach(function(t){t.date=r(t.date)});{var l=color.domain().reduce(function(e,n){var a=jStat(_.pluck(t,n).map(function(t){return+t})).mean(),r=null,i=null;r=e.length>0?a/e[0].av:1,i=e.length>0?e[0].av:a;var o=t.slice();return e.concat({name:n,av:a,values:o.reverse().reduce(function(t,e){var a=null;return a=t.length>0?+e[n]/r+t[t.length-1].r-i:+e[n]/r-i,t.concat({date:e.date,r:a})},[])})},[]);l.filter(function(t){return-1!=graphTimeSeries.indexOf(t.name)})}s.append("g").attr("class","x axis").attr("transform","translate(0,"+height+")").call(n),s.append("g").attr("class","y axis").call(a.tickFormat(i)).append("text").attr("transform","rotate(-90)").attr("y",6).attr("dy","1em").style("text-anchor","end").text("Cumulative Demeaned"),update(l.slice()),color.domain().reverse().forEach(function(t){appendCheckBox(t,l.slice())});var d=s.append("g").attr("class","focus").style("display","none");d.append("rect").attr("width","15em").attr("height","1.1em"),d.append("text").attr("x",9).attr("dy","1em");var c=s.append("g").attr("class","toolTips"),u=color.domain().reduce(function(t,e){return t[e]=c.append("g").attr("class","focus "+e).style("display","none"),t[e].append("rect").attr("width","15em").attr("height","1.1em"),t[e].append("text").attr("x",9).attr("dy","1em"),t},[]),p=s.append("g").attr("class","dateLine").style("display","none");p.append("line").attr("x1",0).attr("y1",0).attr("x2",0).attr("y2",height);var m=s.append("rect").attr("class","overlay");m.attr("width",width).attr("height",height),m.on("mouseover",function(){l.forEach(function(t){u[t.name].style("display","none")}),graphTimeSeries.forEach(function(t){u[t].style("display",null)}),d.style("display",null),p.style("display",null)}).on("mousemove",e)}var graphTimeSeries=["STRATEGY_return"],margin={bottom:.05*window.innerHeight,top:.05*window.innerHeight,right:.05*window.innerWidth,left:.05*window.innerWidth},width=window.innerWidth-margin.left-margin.right,height=window.innerHeight-margin.top-margin.bottom,x=d3.time.scale().range([0,width]),y=d3.scale.linear().range([height,0]),color=d3.scale.category10(),line=d3.svg.line().interpolate("basis").x(function(t){return x(t.date)}).y(function(t){return y(t.r)});';
-                        //convert to this to json
-                        //(dd + "var data = "+JSON.stringify(this)+";draw(data);").print();
-                        //document.getElementById('codex').value = (dd + ";var data = "+JSON.stringify(this)+";draw(data);");
-                        //document.write(strg);
-                        
-                        //document.getElementById('xoxo').innerHTML = JSON.stringify(this);
-                        
-                        
                         
                         //minimise code
                         //merge into string with code
@@ -677,12 +668,12 @@
                         
                         
                         //draw graph
-                        //draw(this);
                         var d = new Graph();
                         
-                        d.draw(this,true);
+                        "Orig".print();
+                        this.print();
+                        d.draw(this,true,null);
                         
-                        //var xo = new Graph(this);
                         
                         //*************************************************************************************
                         //*************************************************************************************
