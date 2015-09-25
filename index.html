@@ -190,21 +190,10 @@
                 <hr />
                 
                 <p>Sharpe Trajectories</p>
-                
-                
-                <input type="text" id='codex' autocomplete="on"/>
-        
                         
                 <div id='graph'></div>
-                <!--
-                IRX
-                <input type="checkbox" id="1" autocomplete="on" checked />
-                GSPC
-                <input type="checkbox" id="1" autocomplete="on" checked />
-                SKEW
-                <input type="checkbox" id="1" autocomplete="on" checked />
-                -->
-                        <p id='xoxo'></p>
+                
+                Embed Graph <input type="text" id='codex' autocomplete="on"/>
                         
                 <hr />
 
@@ -670,9 +659,7 @@
                         //draw graph
                         var d = new Graph();
                         
-                        "Orig".print();
-                        this.print();
-                        d.draw(this,true,null);
+                        d.draw(this.slice(),true,null);
                         
                         
                         //*************************************************************************************
@@ -795,7 +782,6 @@
                         "Yearly Loss Probability".print();
                         probLoss.toLocaleString().print();
                         
-                        var std10YrSharpe = jStat.studentt.inv(1-probLoss,9)/Math.sqrt(10);
                         "Standardised Sharpe (10 year backtest history)".print();
                         std10YrSharpe.toLocaleString().print();
                         */
@@ -810,8 +796,6 @@
                                 node.removeChild(node.lastChild);
                                 }
                         
-                        
-                        
                         //*************************************************************************************
                         //*************************************************************************************
                         //print to page
@@ -819,15 +803,12 @@
                         av.toLocaleString().write("Average Return:");
                         sd.toLocaleString().write("Std Dev:");
                         sharpe.toLocaleString().write("Sharpe:");
-                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
                         skew.toLocaleString().write("Skew:");
-                        
-                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
                         (maxWait+" Yrs").write("Profitability Max Wait:"); 
                         
+                        //print locale date instead
                         this[this.length-1].date.toLocaleDateString().write("From:");
-                        this[0].date.toLocaleDateString().write("To:");  
-                        
+                        this[0].date.toLocaleDateString().write("To:");
                 }
                 
         </script>
