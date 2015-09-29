@@ -187,14 +187,26 @@
                         <p >(Results are <a href='http://blog.johnorford.com/2015/06/22/big-oh/' target='_blank'>"Big O"</a>, i.e. conservative)</p>
                 </div>
                 
-                <hr />
                 
-                <p>Sharpe Trajectories</p>
-                        
-                <div id='graph'></div>
                 
-                Embed Graph <input type="text" id='codex' autocomplete="on"/>
                         
+                <div id='hidden1' style='display:none'>
+                
+                        <hr />
+                        
+                        <p>Sharpe Trajectories</p>
+                                
+                </div>     
+                        <div id='graph'></div>
+                        
+                <div id='hidden2' style='display:none'>
+                        
+                        Embed Graph
+                        
+                        <input type="text" id='codex' autocomplete="on"/>
+                     
+                </div>
+                                
                 <hr />
 
                 <p>Optional: input a Quandl key for unlimited free data</p>
@@ -224,6 +236,8 @@
                 
                 //*****************************************************
                 //set listeners
+                
+                
                 
                 document.getElementById('addAsset1')
                         .addEventListener(
@@ -262,6 +276,10 @@
                         var s = document.createElement('script');
                         s.textContent = js;
                         document.body.appendChild(s);
+                        
+                        document.getElementById('hidden1').style.display = null;
+                        document.getElementById('hidden2').style.display = null;
+                        
                         }
                 
                 //*****************************************************
@@ -319,6 +337,7 @@
                           lineNumbers: true
                         }
                         );
+                
                 
                 //*****************************************************
                     
