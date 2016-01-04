@@ -1,0 +1,1 @@
+var quandlApiKey = 'Fp6cFhibc5xvL2pN3dnu';
