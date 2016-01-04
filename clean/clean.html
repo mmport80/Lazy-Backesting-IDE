@@ -82,7 +82,7 @@
     send.next();
 
     d3.csv( "https://www.quandl.com/api/v3/datasets/YAHOO/INDEX_GSPC.csv?auth_token="+quandlApiKey,
-            data => send.next( data )
-            )
+      data => send.next( data )
+      )
   </script>
 </html>
