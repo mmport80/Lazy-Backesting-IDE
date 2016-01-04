@@ -804,11 +804,15 @@
                         "Standardised Sharpe (10 year backtest history)".print();
                         std10YrSharpe.toLocaleString().print();
                         */
+<<<<<<< HEAD
                         
                         
                         
                         //*************************************************************************************
                         //*************************************************************************************
+=======
+                        //***************************************************************
+>>>>>>> addf4672b6b714b22df7b38bbfc9d3c3986500a1
                         //remove pre-existing nodes
                         var node = document.getElementById("messages");
                         while (node.hasChildNodes()) {
@@ -822,6 +826,7 @@
                         av.toLocaleString().write("Average Return:");
                         sd.toLocaleString().write("Std Dev:");
                         sharpe.toLocaleString().write("Sharpe:");
+<<<<<<< HEAD
                         skew.toLocaleString().write("Skew:");
                         (maxWait+" Yrs").write("Profitability Max Wait:"); 
                         
@@ -829,6 +834,20 @@
                         this[this.length-1].date.toLocaleDateString().write("From:");
                         this[0].date.toLocaleDateString().write("To:");
                 }
+=======
+                        //std10YrSharpe.toLocaleString().write("Standardised Sharpe (10 year backtest history):");
+                        skew.toLocaleString().write("Skew:")
+                        stratRets.length.toLocaleString().write("Sample Size:");
+                        
+                        //probLoss.toLocaleString().write("Yearly Loss Probability:");
+                        maxWait.write("Max Wait to Profitability:"); 
+                        //expectedWait.write("Expected:");
+                        //.write("Max:");
+                        
+                        
+                        }
+                
+>>>>>>> addf4672b6b714b22df7b38bbfc9d3c3986500a1
                 
         </script>
 </html>

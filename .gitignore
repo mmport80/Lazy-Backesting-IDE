@@ -37,4 +37,10 @@ ehthumbs.db
 Thumbs.db
 
 *~
+<<<<<<< HEAD
+=======
+
+lib/listeners.js~
+
+>>>>>>> addf4672b6b714b22df7b38bbfc9d3c3986500a1
 *.js~
