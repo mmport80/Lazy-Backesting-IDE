@@ -17,114 +17,71 @@
   </script>
   <script type="text/javascript" src="quandl-api-key.js"></script>
   <script type="text/javascript">
-
-    /*
-    what does daily sampling mean?
-
-    buy and sell 24 hours apart
-
-    if there's a wknd, can't buy and sell 24 hours apart - more like 72 hours
-
-    but that's ok
-
-    if there's a holiday, same thing
-
-    strict sampling would ensure 24 hour gaps - discard hols etc
-
-    but...
-
-    if you're on a friday you might want to understand poss landings on monday...
-
-    so... for all intents and purposes weekends should prob be treated the same as consecutive day jumps
-
-    which leaves market holidays
-
-    market hols don't add that much vol compared to a normal day -
-
-    so, as long as market hols can be identified don't worry about them
-
-    upshot:
-
-    1) identify and avoid non hol & wknd gaps
-    2) find hol data - translate from quantlib
-
-
-
-    return includes two dates - a & b
-
-    if a-b is greater than 1 day
-
-    check that gap does not contain holiday
-
-    if it contains a holiday: ok
-
-    if not: filter out return (missing data, ignore return)
-
-
-
-    */
     "use strict";
 
-
+    const noBizDays =
+      (fromDate, toDate) =>
+        {
+        const currentDate = moment(fromDate).add(1, 'days');
+        //currentDate = to? nothing left to do
+        if ( moment(toDate).diff(currentDate) === 0 ){
+          return true;
+          }
+        //is a bd?
+        else if ( isBusinessDayNYSE( currentDate ) ){
+          return false;
+          }
+        //else call next recursive function
+        else {
+          return noBizDays(currentDate, toDate);
+          }
+        }
 
     const postBox = function*(){
-            const a = yield;
+      const prices = yield;
 
-            console.log(a);
+      const format = d3.time.format("%Y-%m-%d");
 
-            const format = d3.time.format("%Y-%m-%d");
-
-            const b = format.parse(a[0].Date);
-
-            console.log(b);
-
-            const rr = a.reverse().reduce(
-              (a,c) => {
-                return a.prev === null ?
-                  {result: a.result, prev: c}
-                  :
-                  {
-                    result: a.result.concat(
-                      Object.assign(
-                        c,
-                        {
-                          return: Math.log( +c.Close / +a.prev.Close ),
-                          prevDate: a.prev.Date
-                        }
-                        )
-                      )
-                    , prev: c
-                  }
-                }
-              , { result: [], prev: null }
-            ).result;
-
-            rr.map( x => console.log( x, moment(x.Date).diff(x.prevDate, 'days') ) );
-
-            /*
-            const closePrices = _.chain(a)
-                    .pluck("Close")
-                    .map(x => +x);
-
-            const before = closePrices.rest().value();
-            const after = closePrices.initial().value();
-
-            const returns = numeric.log( numeric['/'](after, before) );
-
-            const mean = jStat.mean(returns);
-
-            const demeanedReturns = numeric['-'](returns,mean);
-
-            console.log(jStat.mean(demeanedReturns));
-
-            */
+      const returns = prices
+        .reverse()
+        .reduce(
+          (accumulant, current) => {
+            return accumulant.previous === null ?
+              {result: accumulant.result, previous: current}
+              :
+              {
+                result: accumulant.result.concat(
+                  Object.assign(
+                    current
+                    , {
+                      return: Math.log( +current.Close / +accumulant.previous.Close )
+                      , prevDate: accumulant.previous.Date
+                      }
+                    )
+                  )
+                , previous: current
+              }
             }
+          //initial
+          , { result: [], previous: null }
+        //just return result
+        ).result;
+
+      const cleanReturns = returns.filter(
+        x =>
+          //ensure no biz days in between ret calc dates
+          //ensure no missing data
+          noBizDays(x.prevDate, x.Date)
+          );
+
+      console.log(cleanReturns);
+      }
 
     //init
     const send = postBox();
     send.next();
 
-    d3.csv( "https://www.quandl.com/api/v3/datasets/YAHOO/FB.csv?auth_token="+quandlApiKey,
+    d3.csv( "https://www.quandl.com/api/v3/datasets/YAHOO/INDEX_GSPC.csv?auth_token="+quandlApiKey,
             data => send.next( data )
             )
   </script>
