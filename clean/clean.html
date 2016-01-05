@@ -67,6 +67,24 @@
         //just return result
         ).result;
 
+      //check whether every date is a business day
+      //if not biz day -> we have a problem
+
+      const errors = prices.filter(
+        x =>
+          //we have a price, but supossedly not a biz day
+          isBusinessDayNYSE(x.Date) === false
+          )
+        .map(
+          x => {
+            document.write(x.Date);
+            document.write("<br />");
+            }
+          );
+
+      console.log("errors");
+      console.table(errors);
+
       const cleanReturns = returns.filter(
         x =>
           //ensure no biz days in between ret calc dates
@@ -74,6 +92,7 @@
           noBizDays(x.prevDate, x.Date)
           );
 
+      console.log("cleanReturns");
       console.log(cleanReturns);
       }
 
